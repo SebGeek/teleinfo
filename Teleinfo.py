@@ -5,126 +5,67 @@
 """
  
 import serial
-import time
 import traceback
-import logging
+#import logging
+import logging.handlers
 import sys
-from optparse import OptionParser
-import os
+import argparse
 import datetime
+import threading
+import time
 
-
-# Default log level
-gLogLevel = logging.ERROR
- 
 # Device name
 gDeviceName = '/dev/ttyAMA0'
-# Default output is stdout
-gOutput = sys.__stdout__
- 
-# ----------------------------------------------------------------------------
-# LOGGING
-# ----------------------------------------------------------------------------
-class MyLogger:
-    """ Our own logger """
- 
-    def __init__(self):
-        self._logger = logging.getLogger('teleinfo')
-        hdlr = logging.FileHandler('debug.log')
-        formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-        hdlr.setFormatter(formatter)
-        self._logger.addHandler(hdlr)
-        self._logger.setLevel(gLogLevel)
- 
-    #def __del__(self):
-        #if self._logger != None:
-            #logging.shutdown()
- 
-    def debug(self, text):
-        try:
-            self._logger.debug(text)
-        except NameError:
-            pass
- 
-    def info(self, text):
-        try:
-            self._logger.info(text)
-        except NameError:
-            pass
- 
-    def error(self, text):
-        try:
-            self._logger.error(text)
-        except NameError:
-            pass
- 
- 
-# ----------------------------------------------------------------------------
-# Exception
-# ----------------------------------------------------------------------------
-class TeleinfoException(Exception):
-    """
-    Teleinfo exception
-    """
- 
-    def __init__(self, value):
-        Exception.__init__(self)
-        self.value = value
- 
-    def __str__(self):
-        return repr(self.value)
- 
+
+# Global variable shared with the thread
+last_frame_read = ""
  
 # ----------------------------------------------------------------------------
 # Teleinfo core
 # ----------------------------------------------------------------------------
-class Teleinfo:
-    """ Fetch teleinformation datas and call user callback
-    each time all data are collected
+class Teleinfo(threading.Thread):
+    """ Fetch teleinformation datas
     """
  
-    def __init__(self, device):
-        """ @param device : teleinfo modem device path
-        @param log : log instance
-        @param callback : method to call each time all data are collected
-        The datas will be passed using a dictionnary
+    def __init__(self, device, logger, list_of_tags_to_read_values):
         """
-        self._log = MyLogger()
+        @param device : teleinfo modem device path
+        @param logfile : log file instance
+        """
         self._device = device
-        self._ser = None
-
+        self.logger  = logger
+        self.list_of_tags_to_read_values = list_of_tags_to_read_values
+        
         # Open Teleinfo modem
-        try:
-            self.open()
-        except TeleinfoException as err:
-            self._log.error(err.value)
-            print err.value
-            self.terminate()
-            return
-
-        #self._stop = Event()
+        self.open()
+        
+        self.RqTerminate  = False
+        self.IsTerminated = False
+        threading.Thread.__init__(self)
  
     def open(self):
         """ open teleinfo modem device
         """
+        self._ser = None
         try:
-            self._log.info("Try to open Teleinfo modem '%s'" % self._device)
-            self._ser = serial.Serial(self._device, 1200, bytesize=7, parity = 'E', stopbits=1)
-            self._log.info("Teleinfo modem successfully opened")
+            self.logger.info("Try to open Teleinfo modem '%s'" % self._device)
+            self._ser = serial.Serial(self._device, 1200, bytesize=7, parity='E', stopbits=1)
+            self.logger.info("Teleinfo modem successfully opened")
         except:
-            error = "Error opening Teleinfo modem '%s' : %s" % (self._device, traceback.format_exc())
-            raise TeleinfoException(error)
+            self.logger.error("Error opening Teleinfo modem '%s' : %s" % (self._device, traceback.format_exc()) )
+            self.terminate()
+            
 
     def close(self):
-        """ close telinfo modem
-        """
-        #self._stop.set()
+        self.RqTerminate = True
+        while self.IsTerminated != True:
+            pass
+        
         if self._ser != None and self._ser.isOpen():
             self._ser.close()
  
     def terminate(self):
         self.close()
-        #sys.close(gOutput)
         sys.exit(0)
  
     def read_serial(self):
@@ -134,71 +75,60 @@ class Teleinfo:
         this method can take time but it ensures that the frame returned is valid
         @return frame : list of dict {name, value, checksum}
         """
-        #Get the begin of the frame, markde by \x02
-        resp = self._ser.readline()
+        #Get the begin of the frame, marked by \x02
+        self._ser.flushInput()
+        self._ser.flushOutput()
+        resp = ""
+        
         is_ok = False
-        frame = []
-        frameCsv = []
+        frameCsv = {}
         while not is_ok:
-            try:
-                while '\x02' not in resp:
-                    resp = self._ser.readline()
-                #\x02 is in the last line of a frame, so go until the next one
-                #print "* Begin frame"
-                frameCsv.append(str(datetime.datetime.now()))
+            while '\x02' not in resp:
                 resp = self._ser.readline()
-                #A new frame starts
-                #\x03 is the end of the frame
-                while '\x03' not in resp:
-                    #Don't use strip() here because the checksum can be ' '
-                    if len(resp.replace('\r','').replace('\n','').split()) == 2:
-                        #The checksum char is ' '
-                        name, value = resp.replace('\r','').replace('\n','').split()
-                        checksum = ' '
-                    else:
-                        name, value, checksum = resp.replace('\r','').replace('\n','').split()
-                        #print "name : %s, value : %s, checksum : %s" % (name, value, checksum)
-                    if self._is_valid(resp, checksum):
-                        frame.append({"name" : name, "value" : value, "checksum" : checksum})
-                        #frameCsv.append(value)
-                        if str(name) in ("HCHC", "HCHP", "PTEC", "IINST", "PAPP"):
-                            frameCsv.append(value)
-                    else:
-                        self._log.error("** FRAME CORRUPTED !")
-                        #This frame is corrupted, we need to wait until the next one
-                        frame = []
-                        frameCsv = []
-                        while '\x02' not in resp:
-                            resp = self._ser.readline()
-                        self._log.error("* New frame after corrupted")
-                    resp = self._ser.readline()
+            
+            #\x02 is in the last line of a frame, so go until the next one
+            #A new frame starts
+            resp = self._ser.readline()
 
-                #\x03 has been detected, that's the last line of the frame
+            #\x03 is the end of the frame
+            while '\x03' not in resp:
+                #Don't use strip() here because the checksum can be ' '
                 if len(resp.replace('\r','').replace('\n','').split()) == 2:
-                    #print "* End frame"
                     #The checksum char is ' '
-                    name, value = resp.replace('\r','').replace('\n','').replace('\x02','').replace('\x03','').split()
+                    name, value = resp.replace('\r','').replace('\n','').split()
                     checksum = ' '
                 else:
-                    name, value, checksum = resp.replace('\r','').replace('\n','').replace('\x02','').replace('\x03','').split()
-
+                    name, value, checksum = resp.replace('\r','').replace('\n','').split()
+                    #print "name : %s, value : %s, checksum : %s" % (name, value, checksum)
                 if self._is_valid(resp, checksum):
-                    frame.append({"name" : name, "value" : value, "checksum" : checksum})
-                    # MOTDETAT : Mot d’état (autocontrôle)
-                    #frameCsv.append(str(name) + ":"+  str(value))
-                    #print "* End frame, is valid : %s" % frame
-                    is_ok = True
+                    if str(name) in self.list_of_tags_to_read_values:
+                        frameCsv[name] = value
                 else:
-                    self._log.error("** Last frame invalid")
-                    resp = self._ser.readline()
+                    self.logger.error("** FRAME CORRUPTED !")
+                    #This frame is corrupted, we need to wait until the next one
+                    frameCsv = {}
+                    while '\x02' not in resp:
+                        resp = self._ser.readline()
+                    self.logger.error("* New frame after corrupted")
+                resp = self._ser.readline()
 
-            except ValueError:
-                #Badly formatted frame
-                #This frame is corrupted, we need to wait until the next one
-                frame = []
-                frameCsv = []
-                while '\x02' not in resp:
-                    resp = self._ser.readline()
+            #\x03 has been detected, that's the last line of the frame
+            if len(resp.replace('\r','').replace('\n','').split()) == 2:
+                #print "* End frame"
+                #The checksum char is ' '
+                name, value = resp.replace('\r','').replace('\n','').replace('\x02','').replace('\x03','').split()
+                checksum = ' '
+            else:
+                name, value, checksum = resp.replace('\r','').replace('\n','').replace('\x02','').replace('\x03','').split()
+
+            if self._is_valid(resp, checksum):
+                # MOTDETAT : Mot d’état (autocontrôle)
+                #print "* End frame, is valid : %s" % frame
+                is_ok = True
+            else:
+                self.logger.error("** Last frame invalid")
+                resp = self._ser.readline()
+                         
         return frameCsv
  
     def _is_valid(self, frame, checksum):
@@ -215,87 +145,149 @@ class Teleinfo:
         #print "computed_checksum = %s" % chr(computed_checksum)
         return chr(computed_checksum) == checksum
  
-    def read(self):
-        """ Main function
-        """
+    def run(self):
+        # Global variable modified by this thread
+        global last_frame_read
+        
+        while self.RqTerminate == False:
+            # Read a frame
+            last_frame_read = self.read_serial()
 
-        # Read a frame
-        frameCsv = self.read_serial()
+        self.IsTerminated = True
 
-        # output CSV
-        frameMod = str(frameCsv).replace('\'','').replace(' ','').replace(',',';').strip('[]')
-        return(frameMod)
+def func_logger(filename):
+    logger = logging.getLogger('teleinfo_status')
+    logger.setLevel(logging.DEBUG)
+    # create file handler which logs even debug messages
+    fh = logging.FileHandler(filename)
+    fh.setLevel(logging.DEBUG)
 
+    # create console handler and set level to debug
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    
+    # create formatter
+    formatter = logging.Formatter('%(asctime)s:%(levelname)s:%(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+    fh.setFormatter(formatter)
+    ch.setFormatter(formatter)
+    
+    # add to logps auxger
+    logger.addHandler(fh)
+    logger.addHandler(ch)
+    
+    return logger
+    
+def func_store_val(filename):
+    store_val = logging.getLogger('teleinfo_values')
+    store_val.setLevel(logging.DEBUG)
+    # create file handler which logs teleinfo values
+    # Files are cut every day at midnight
+    fh = logging.handlers.TimedRotatingFileHandler(filename, when='midnight')
 
-# ----------------------------------------------------------------------------
-# Teleinfo core
-# ----------------------------------------------------------------------------
-class LogRotate:
-    """
-    """
+    fh.setLevel(logging.DEBUG)
+    # create formatter
+    formatter = logging.Formatter('%(message)s')
+    fh.setFormatter(formatter)
+    
+    # add to logger
+    store_val.propagate = False # do not send to console stdout
+    store_val.addHandler(fh)
 
-    def __init__(self, filename, max_size, header):
-        self.max_size = max_size # in Bytes
-        self.header = header + "\n"
-        add_header = not(os.path.isfile(filename))
-        try:
-            self.logfile = open(filename, 'a')
-        except:
-            error = "Can not open file for append: %s" % filename
-            raise TeleinfoException(error)
-        if add_header:
-            self.logfile.writelines(self.header)
-
-    def push(self, line):
-        self.logfile.writelines(line)
-        if self.logfile.tell() >= self.max_size:
-            # File is too big, so rename it and create a new one
-            old_filename = self.logfile.name
-            self.logfile.close()
-            new_filename = old_filename + ".1"
-            if os.path.isfile(new_filename) == True:
-                os.remove(new_filename)
-            os.rename(old_filename, new_filename)
-            self.logfile = open(old_filename, 'a')
-            self.logfile.writelines(self.header)
-
+    return store_val
+    
+    
 #------------------------------------------------------------------------------
 # MAIN
 #------------------------------------------------------------------------------
+
+def main():
+    duration = 100*24*60*60 # 100 days
+    period   = 5
+    prix_HC = 0.0638 * 1.2 # prix TTC sur ma facture du 3/2/2016 pour 1 kWh, TVA à 20%
+    prix_HP = 0.1043 * 1.2
+                
+    starttime = time.time()
+    endtime   = starttime + duration
+    previoustime = starttime
+    first_time = True
+    
+    # Header    
+    store_val.info("Date;" +
+                   "Prix en euros;" +
+                   "Index total en Wh;" +
+                   "PAPP: Puissance apparente en V.A;" +
+                   "PTEC: Periode tarifaire (HC=0, HP=1)")
+    
+    while time.time() <= endtime:
+        if time.time() >= (previoustime + period):
+            Date = datetime.datetime.now()
+            
+            if first_time == True:
+                Index_total = 0
+                prix = 0
+                Index_HC_offset = int(last_frame_read["HCHC"])
+                Index_HP_offset = int(last_frame_read["HCHP"])
+                first_time = False
+            else:
+                Index_HC = int(last_frame_read["HCHC"]) - Index_HC_offset
+                Index_HP = int(last_frame_read["HCHP"]) - Index_HP_offset
+                Index_total  = Index_HC + Index_HP
+                prix         = (Index_HC/1000. * prix_HC) + (Index_HP/1000. * prix_HP)
+                
+            if last_frame_read["PTEC"][0:2] == 'HC':
+                Periode_tarifaire = 0
+            else:
+                Periode_tarifaire = 1
+                        
+            Puissance_apparente = int(last_frame_read["PAPP"])
+            
+            store_val.info(str(Date)                  + ";" +
+                           str(prix).replace('.',',') + ";" +
+                           str(Index_total)           + ";" +
+                           str(Puissance_apparente)   + ";" +
+                           str(Periode_tarifaire) )
+
+            previoustime += period
+            
+        time.sleep(0.1)
+        
 if __name__ == "__main__":
     '''
-ADCO : Identifiant du compteur
-OPTARIF : Option tarifaire (type d’abonnement)
-ISOUSC : Intensité souscrite
-HCHC : Index heures creuses si option = heures creuses (en Wh)
-HCHP : Index heures pleines si option = heures creuses (en Wh)
-PTEC : Période tarifaire en cours
-IINST : Intensité instantanée (en ampères)
-IMAX : Intensité maximale (en ampères)
-PAPP : Puissance apparente (en Volt.ampères)
-HHPHC : Groupe horaire si option = heures creuses ou tempo
+    HP      :  6h30 - 22h30
+    HC      : 22h30 -  6h30
+    
+    ADCO    : Identifiant du compteur
+    OPTARIF : Option tarifaire (type d’abonnement)
+    ISOUSC  : Intensité souscrite
+    HCHC    : Index heures creuses si option = heures creuses (en Wh)
+    HCHP    : Index heures pleines si option = heures creuses (en Wh)
+    PTEC    : Période tarifaire en cours
+    IINST   : Intensité instantanée (en ampères)
+    IMAX    : Intensité maximale (en ampères)
+    PAPP    : Puissance apparente (en Volt.ampères)
+    HHPHC   : Groupe horaire si option = heures creuses ou tempo
     '''
-	
-    usage = "usage: %prog [options]"
-    parser = OptionParser(usage)
-    parser.add_option("-o", "--output", dest="filename", help="append result in FILENAME")
-    (options, args) = parser.parse_args()
-    print "opt: %s, arglen: %s" % (options, len(args))
-    if options.filename:
-        ObjLogRotate = LogRotate(options.filename, 10*1024*1024,
-									"date;" +
-									"HCHC: Index heures creuses en Wh;" +
-									"HCHP: Index heures pleines en Wh;" +
-									"PTEC: Periode tarifaire;" + 
-									"IINST: Intensite instantanee en A;" +
-									"PAPP: Puissance apparente en V.A")
- 
-    teleinfo = Teleinfo(gDeviceName)
-    while(True):
-        line_read = teleinfo.read()
-        #print line_read
-        ObjLogRotate.push(line_read + "\n")
 
-    '''HP 6h30-22h30  '''
+    # read arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-o", "--output", required=True, help="append Teleinfo values in OUTPUT file")
+    args = parser.parse_args()
+    
+    # Create status log (for info or errors)
+    # store in file and display to console
+    logger    = func_logger("status.log")
+    
+    # Create results log
+    # store in file but do not display in console
+    store_val = func_store_val(args.output)
+    logger.info("Teleinfo values will append in %s file", args.output)
 
-    print "END OF PROG"
+    thread_teleinfo = Teleinfo(gDeviceName, logger, ("HCHC", "HCHP", "PTEC", "IINST", "PAPP"))
+    thread_teleinfo.start()
+
+    try:
+        main()
+
+    except (KeyboardInterrupt, SystemExit):
+        thread_teleinfo.close()
+        logger.info("Keyboard interrupt: end of prog")
