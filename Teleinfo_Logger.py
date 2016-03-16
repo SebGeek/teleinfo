@@ -6,7 +6,6 @@
  
 import serial
 import traceback
-#import logging
 import logging.handlers
 import sys
 import argparse
@@ -17,12 +16,16 @@ import time
 # Device name
 gDeviceName = '/dev/ttyAMA0'
 
+duration = 100 * 24 * 3600 # durée avant d'arrêter le log: 100 days
+period   = 10              # période de mesure en secondes
+prix_HC  = 0.0638 * 1.2    # prix HC TTC pour 1 kWh (TVA à 20%, voir facture du 3/2/2016) 
+prix_HP  = 0.1043 * 1.2    # prix HP TTC
+
+
 # Global variable shared with the thread
-last_frame_read = ""
+last_frame_read = {"HCHC":0, "HCHP":0, "PTEC":0, "PAPP":0}
  
-# ----------------------------------------------------------------------------
-# Teleinfo core
-# ----------------------------------------------------------------------------
+
 class Teleinfo(threading.Thread):
     """ Fetch teleinformation datas
     """
@@ -201,51 +204,52 @@ def func_store_val(filename):
 #------------------------------------------------------------------------------
 
 def main():
-    duration = 100*24*60*60 # 100 days
-    period   = 5
-    prix_HC = 0.0638 * 1.2 # prix TTC sur ma facture du 3/2/2016 pour 1 kWh, TVA à 20%
-    prix_HP = 0.1043 * 1.2
-                
     starttime = time.time()
     endtime   = starttime + duration
     previoustime = starttime
     first_time = True
     
-    # Header    
-    store_val.info("Date;" +
-                   "Prix en euros;" +
-                   "Index total en Wh;" +
+    # Header
+    store_val.info("date;" +
+                   "Prix en euros depuis le lancement de ce logger;" +
+                   "Index total (HC+HP) en Wh depuis le lancement de ce logger;" +
                    "PAPP: Puissance apparente en V.A;" +
-                   "PTEC: Periode tarifaire (HC=0, HP=1)")
+                   "PTEC: Periode tarifaire (HC=0, HP=1);" +
+                   "HCHC: Index Heures creuses en Wh;" +
+                   "HCHP: Index Heures pleines en Wh")
     
     while time.time() <= endtime:
         if time.time() >= (previoustime + period):
-            Date = datetime.datetime.now()
-            
+            date = datetime.datetime.now()
+
+            index_HC_current = int(last_frame_read["HCHC"])
+            index_HP_current = int(last_frame_read["HCHP"])
             if first_time == True:
-                Index_total = 0
+                index_HC_offset = index_HC_current
+                index_HP_offset = index_HP_current
+                index_total = 0
                 prix = 0
-                Index_HC_offset = int(last_frame_read["HCHC"])
-                Index_HP_offset = int(last_frame_read["HCHP"])
                 first_time = False
             else:
-                Index_HC = int(last_frame_read["HCHC"]) - Index_HC_offset
-                Index_HP = int(last_frame_read["HCHP"]) - Index_HP_offset
-                Index_total  = Index_HC + Index_HP
-                prix         = (Index_HC/1000. * prix_HC) + (Index_HP/1000. * prix_HP)
+                index_HC    = index_HC_current - index_HC_offset
+                index_HP    = index_HP_current - index_HP_offset
+                index_total = index_HC + index_HP
+                prix        = (index_HC / 1000. * prix_HC) + (index_HP / 1000. * prix_HP)
                 
             if last_frame_read["PTEC"][0:2] == 'HC':
-                Periode_tarifaire = 0
+                periode_tarifaire = 0
             else:
-                Periode_tarifaire = 1
+                periode_tarifaire = 1
                         
-            Puissance_apparente = int(last_frame_read["PAPP"])
+            puissance_apparente = int(last_frame_read["PAPP"])
             
-            store_val.info(str(Date)                  + ";" +
+            store_val.info(str(date)                  + ";" +
                            str(prix).replace('.',',') + ";" +
-                           str(Index_total)           + ";" +
-                           str(Puissance_apparente)   + ";" +
-                           str(Periode_tarifaire) )
+                           str(index_total)           + ";" +
+                           str(puissance_apparente)   + ";" +
+                           str(periode_tarifaire)     + ";" +
+                           str(index_HC_current)      + ";" +
+                           str(index_HP_current)      )
 
             previoustime += period
             
@@ -253,6 +257,8 @@ def main():
         
 if __name__ == "__main__":
     '''
+    A exécuter avec: ./Teleinfo_Logger.py -o ./log/log.csv
+
     HP      :  6h30 - 22h30
     HC      : 22h30 -  6h30
     
@@ -270,7 +276,7 @@ if __name__ == "__main__":
 
     # read arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument("-o", "--output", required=True, help="append Teleinfo values in OUTPUT file")
+    parser.add_argument("-o", "--output", required=True, help="append Teleinfo values in OUTPUT file; e.g. ./log/log.csv")
     args = parser.parse_args()
     
     # Create status log (for info or errors)
