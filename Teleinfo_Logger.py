@@ -259,6 +259,10 @@ if __name__ == "__main__":
     '''
     A exécuter avec: ./Teleinfo_Logger.py -o ./log/log.csv
 
+    Pour ne pas fermer le programme en quittant la session SSH, utiliser: screen
+    Pour se détacher: ctrl+a puis d
+    Pour se rattacher: screen -r
+
     HP      :  6h30 - 22h30
     HC      : 22h30 -  6h30
     
