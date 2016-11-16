@@ -3,7 +3,7 @@
 
 #############################################
 #
-# Obens Testbench Status
+#
 #
 #############################################
 try:
@@ -17,7 +17,13 @@ import os
 import sys
 from Queue import Queue
 
-# from gui import Gui
+import matplotlib
+matplotlib.use('TkAgg')
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
+from matplotlib.figure import Figure
+
+from numpy import arange, sin, pi
+
 
 # Access to libraries, equivalent to PYTHONPATH
 current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -27,7 +33,7 @@ sys.path.append(os.path.join(current_dir, "common/core"))
 from TB_action import ActionGUI
 from TB_network_topology import ThreadReadStatus
 
-LOG_FRAME = True
+LOG_FRAME = False
 
 class Application(Frame):
 
@@ -54,8 +60,6 @@ class Application(Frame):
         help_menu = Menu(menu, tearoff=False)
         menu.add_cascade(label="Help", menu=help_menu)
         help_menu.add_command(label="About...", command=self.about_command)
-        help_menu.add_separator()
-        help_menu.add_command(label="Exit", command=self.do_quit)
 
         self.__createWidgets(self.root)
 
@@ -83,17 +87,19 @@ class Application(Frame):
         parent.columnconfigure(0, weight=1)
         row_current = 0
 
-        # Network topology picture
-        row_current += 1
+        # Plot
         parent.rowconfigure(row_current, weight=1)
-        TU_text = ""
-        self.Log_Network = LabelFrame(parent, text='Network topology for' + TU_text + " loaded with ")
-        self.Log_Network.rowconfigure(0, weight=1)
-        self.Log_Network.grid(row=row_current, column=0, sticky=NSEW)
 
-        self.Log_Network.columnconfigure(0, weight=1)
-        self.network_picture_label = Label(self.Log_Network)
-        self.network_picture_label.grid(row=0, column=0)
+        f = Figure(figsize=(5, 4), dpi=100)
+        a = f.add_subplot(111)
+        t = arange(0.0, 3.0, 0.01)
+        s = sin(2 * pi * t)
+        a.plot(t, s)
+
+        canvas = FigureCanvasTkAgg(f, master=parent)
+        canvas.get_tk_widget().grid(row=row_current, column=0, sticky="nsew")
+        toolbar = NavigationToolbar2TkAgg(canvas, parent)
+        toolbar.grid(row=row_current, column=0, sticky="nw")
 
         # Log_frame
         if LOG_FRAME == True:
@@ -108,37 +114,14 @@ class Application(Frame):
             self.textPad = ScrolledText(self.Log_frame, width=110, height=10)
             self.textPad.grid(row=0, column=0)
 
-        self.read_status_queue = Queue()
-        self.ObjThreadReadStatus = ThreadReadStatus(self.read_status_queue, self.display)
-
     def refresh_all(self):
-        self.read_status_queue.put("refresh_all", block=False)
-
-    def do_quit(self):
-        self.read_status_queue.put("terminate_thread", block=False)
-        self.quit() # Close GUI
-
-    def do_power_on(self):
-        ObjActionGUI = ActionGUI(Toplevel(self.master), self.display)
-        ObjActionGUI.power_mgt("Power-on")
-
-    def do_power_off(self):
-        ObjActionGUI = ActionGUI(Toplevel(self.master), self.display)
-        ObjActionGUI.power_mgt("Power-off")
-
-    def do_restart(self):
-        ObjActionGUI = ActionGUI(Toplevel(self.master), self.display)
-        ObjActionGUI.power_mgt("Restart")
-
-    def do_drcs(self):
-        ObjActionGUI = ActionGUI(Toplevel(self.master), self.display)
-        ObjActionGUI.Device_mgt("DRCS: Load Excel config and restart")
+        self.display("refresh_all")
 
     def about_command(self):
         tkMessageBox.showinfo("About", "Teleinfo visualizer\n\nS. Auray\n14/11/2016")
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     root = Tk()
     root.geometry("1000x800")
 
