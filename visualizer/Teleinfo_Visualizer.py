@@ -34,8 +34,7 @@ class Application(Frame):
         Frame.__init__(self, self.root)
         self.root.title(title)
 
-        self.display_text = ""
-
+        # Menu
         menu = Menu(self.root)
         self.root.config(menu=menu)
 
@@ -45,14 +44,15 @@ class Application(Frame):
 
         action_menu = Menu(menu, tearoff=False)
         menu.add_cascade(label="Action", menu=action_menu)
-        action_menu.add_command(label="refresh_all", command=self.refresh_all)
-        action_menu.add_separator()
-        action_menu.add_command(label="refresh_all", command=self.refresh_all)
+        action_menu.add_command(label="do_quit", command=self.do_quit)
 
         help_menu = Menu(menu, tearoff=False)
         menu.add_cascade(label="Help", menu=help_menu)
         help_menu.add_command(label="About...", command=self.about_command)
 
+        # Main window
+        self.file_nb = 0
+        self.first_time = True
         self.__create_widgets()
 
         # Update window graphics
@@ -70,17 +70,18 @@ class Application(Frame):
         self.root.columnconfigure(0, weight=1)
         row_current = 0
 
-        # Plot
+        # Plot frame
         self.fig = plt.figure(figsize=(5, 4), dpi=100)
         self.root.rowconfigure(row_current, weight=1)
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.root)
+        self.canvas._tkcanvas.config(background='white', borderwidth=0, highlightthickness=0)
         self.canvas.get_tk_widget().grid(row=row_current, column=0, sticky="nsew")
         toolbar = NavigationToolbar2TkAgg(self.canvas, self.root)
         toolbar.grid(row=row_current, column=0, sticky="nw")
 
         self.plot_figure()
 
-        # Log_frame
+        # Log frame
         if LOG_FRAME == True:
             row_current += 1
             self.root.rowconfigure(row_current, weight=1)
@@ -92,7 +93,9 @@ class Application(Frame):
             self.textPad.grid(row=0, column=0)
 
     def plot_figure(self):
-        with open("../log/log.csv.2016-03-15", 'rb') as csvfile:
+        filename = "log.csv.2016-03-1" + str(self.file_nb)
+        with open("../log/" + filename, 'rb') as csvfile:
+            self.file_nb += 1
             reader = csv.reader(csvfile, delimiter=";")
 
             x_values = []
@@ -106,12 +109,25 @@ class Application(Frame):
 
         plt.xlabel("Date")
         plt.ylabel("Puissance (Watt)")
-        subplot = self.fig.add_subplot(111)
-        subplot.plot(x_values, y_values, label="Jour 1")
-        subplot.legend()
+        #subplot = self.fig.add_subplot(111)
+        subplot = self.fig.add_subplot(1, 1, 1)
+        subplot.plot(x_values, y_values, label=filename)
+
         subplot.grid(True)
+        if self.first_time == True:
+            self.first_time = False
+            # Shrink current axis by 20%
+            box = subplot.get_position()
+            subplot.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+
+        # Put a legend to the right of the current axis
+        subplot.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
         self.canvas.draw()
+
+    def do_quit(self):
+        plt.close('all')
+        self.root.quit()
 
     def refresh_all(self):
         self.display("refresh_all")
@@ -137,3 +153,6 @@ if __name__ == '__main__':
 
     app = Application(root, title="Teleinfo visualizer")
     app.mainloop()
+
+    print "bye bye !"
+    plt.close()
