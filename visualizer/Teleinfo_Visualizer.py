@@ -51,7 +51,7 @@ class Application(Frame):
         help_menu.add_command(label="About...", command=self.about_command)
 
         # Main window
-        self.file_nb = 0
+        self.file_nb = 1
         self.first_time = True
         self.__create_widgets()
 
@@ -118,8 +118,8 @@ class Application(Frame):
             box = subplot.get_position()
             subplot.set_position([box.x0, box.y0, box.width * 0.8, box.height])
 
-        # Put a legend to the right of the current axis
-        subplot.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        # Put a legend to the right of the current axis. Set font size
+        subplot.legend(loc='center left', bbox_to_anchor=(1, 0.5), prop={'size': 8})
 
         plt.xlabel("Date")
         plt.ylabel("Puissance (Watt)")
