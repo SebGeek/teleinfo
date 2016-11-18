@@ -52,6 +52,8 @@ class Application(Frame):
         # Main window
         self.file_nb = 1
         self.first_time = True
+        self.first_date = True
+
         self.__create_widgets()
 
         # Update window graphics
@@ -92,52 +94,58 @@ class Application(Frame):
             self.textPad.grid(row=0, column=0)
 
     def plot_figure(self):
+        if self.first_time == True:
+            # "2, 3, 4" means "2x3 grid, 4th subplot".
+            self.subplot = self.fig.add_subplot(1, 1, 1)
+
+            # format the ticks
+            years_fmt = mdates.DateFormatter('%Y-%m-%d')
+            self.subplot.xaxis.set_major_locator(mdates.DayLocator())
+            self.subplot.xaxis.set_major_formatter(years_fmt)
+            self.subplot.xaxis.set_minor_locator(mdates.HourLocator())
+            self.subplot.format_xdata = mdates.DateFormatter('%Y-%m-%d')
+
+            self.subplot.grid(True)
+
+            # rotates and right aligns the x labels, and moves the bottom of the axes up to make room for them
+            self.fig.autofmt_xdate()
+
+            # Labels
+            plt.xlabel("Date")
+            plt.ylabel("Puissance (Watt)")
+
         filename = "log.csv.2016-03-1" + str(self.file_nb)
-        with open("../log/" + filename, 'rb') as csvfile:
-            self.file_nb += 1
-            reader = csv.reader(csvfile, delimiter=";")
 
-            x_values = []
-            y_values = []
-            for row in reader:
-                if "," in row[1]:
-                    x_date = datetime.datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S.%f")
-                    x_values.append(x_date)
-                    y_value = float(row[1].replace(",", "."))
-                    y_values.append(y_value)
+        csvfile = open("../log/" + filename, 'rb')
+        self.file_nb += 1
+        reader = csv.reader(csvfile, delimiter=";")
 
-        # "234" means "2x3 grid, 4th subplot".
-        subplot = self.fig.add_subplot(4, 1, self.file_nb)
-        subplot.plot(x_values, y_values, label=filename)
+        x_values = []
+        y_values = []
+        first_y_value = True
+        for row in reader:
+            if "," in row[1]:
+                x_date = datetime.datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S.%f")
+                if self.first_date == True:
+                    self.first_date = x_date
+                x_date = x_date.replace(year=self.first_date.year, month=self.first_date.month, day=self.first_date.day)
+                x_values.append(x_date)
+
+                y_value = float(row[1].replace(",", "."))
+                if first_y_value == True:
+                    first_y_value = y_value
+                y_value = y_value - first_y_value
+                y_values.append(y_value)
+
+        self.subplot.plot(x_values, y_values, label=filename)
 
         if self.first_time == True:
-            #self.first_time = False
+            self.first_time = False
             # Shrink current axis by 20% to let some place for the legend at right
-            box = subplot.get_position()
-            subplot.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-
+            box = self.subplot.get_position()
+            self.subplot.set_position([box.x0, box.y0, box.width * 0.9, box.height])
         # Put a legend to the right of the current axis. Set font size
-        subplot.legend(loc='center left', bbox_to_anchor=(1, 0.5), prop={'size': 8})
-
-        # format the ticks
-        years_fmt = mdates.DateFormatter('%Y-%m-%d')
-        subplot.xaxis.set_major_locator(mdates.DayLocator())
-        subplot.xaxis.set_major_formatter(years_fmt)
-        subplot.xaxis.set_minor_locator(mdates.HourLocator())
-
-        #datemin = datetime.date(2016, 3, 10) # year month day
-        #datemax = datetime.date(2016, 3, 16)
-        #subplot.set_xlim(datemin, datemax)
-        subplot.format_xdata = mdates.DateFormatter('%Y-%m-%d')
-
-        subplot.grid(True)
-
-        # rotates and right aligns the x labels, and moves the bottom of the axes up to make room for them
-        self.fig.autofmt_xdate()
-
-        # Labels
-        plt.xlabel("Date")
-        plt.ylabel("Puissance (Watt)")
+        self.subplot.legend(loc='center left', bbox_to_anchor=(1, 0.5), prop={'size': 8})
 
         self.canvas.draw()
 
@@ -154,7 +162,7 @@ class Application(Frame):
         self.update()
 
     def about_command(self):
-        tkMessageBox.showinfo("About", "Teleinfo visualizer\n\nS. Auray\n14/11/2016")
+        tkMessageBox.showinfo("About", "CSV plotter\n\nS. Auray\n14/11/2016")
 
 
 if __name__ == '__main__':
