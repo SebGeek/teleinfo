@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 matplotlib.use('TkAgg')
 
+# autres colonnes dans subplot1
 # - Ajouter curseur
 # - Sélectionner le fichier csv
 # - Ne plas planter et fermer correctement l'appli avec la croix
@@ -95,24 +96,19 @@ class Application(Frame):
 
     def plot_figure(self):
         if self.first_time == True:
-            # "2, 3, 4" means "2x3 grid, 4th subplot".
-            self.subplot = self.fig.add_subplot(1, 1, 1)
+            # "2, 3, 4" means "2x3 grid, 4th subplot1".
+            subplot1 = self.fig.add_subplot(2, 1, 1)
+            subplot2 = self.fig.add_subplot(2, 1, 2)
 
             # format the ticks
-            years_fmt = mdates.DateFormatter('%Y-%m-%d')
-            self.subplot.xaxis.set_major_locator(mdates.DayLocator())
-            self.subplot.xaxis.set_major_formatter(years_fmt)
-            self.subplot.xaxis.set_minor_locator(mdates.HourLocator())
-            self.subplot.format_xdata = mdates.DateFormatter('%Y-%m-%d')
-
-            self.subplot.grid(True)
-
-            # rotates and right aligns the x labels, and moves the bottom of the axes up to make room for them
-            self.fig.autofmt_xdate()
+            format_ticks = mdates.DateFormatter('%H')
+            subplot1.xaxis.set_major_locator(mdates.HourLocator())
+            subplot1.xaxis.set_major_formatter(format_ticks)
 
             # Labels
             plt.xlabel("Date")
             plt.ylabel("Puissance (Watt)")
+            plt.tight_layout()
 
         filename = "log.csv.2016-03-1" + str(self.file_nb)
 
@@ -121,8 +117,9 @@ class Application(Frame):
         reader = csv.reader(csvfile, delimiter=";")
 
         x_values = []
-        y_values = []
-        first_y_value = True
+        y1_values = []
+        y2_values = []
+        first_y1_value = True
         for row in reader:
             if "," in row[1]:
                 x_date = datetime.datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S.%f")
@@ -131,21 +128,22 @@ class Application(Frame):
                 x_date = x_date.replace(year=self.first_date.year, month=self.first_date.month, day=self.first_date.day)
                 x_values.append(x_date)
 
-                y_value = float(row[1].replace(",", "."))
-                if first_y_value == True:
-                    first_y_value = y_value
-                y_value = y_value - first_y_value
-                y_values.append(y_value)
+                y1_value = float(row[1].replace(",", "."))
+                y2_value = float(row[4].replace(",", "."))
+                if first_y1_value == True:
+                    first_y1_value = y1_value
+                    first_y2_value = y2_value
+                y1_value = y1_value - first_y1_value
+                y2_value = y2_value - first_y2_value
+                y1_values.append(y1_value)
+                y2_values.append(y2_value)
 
-        self.subplot.plot(x_values, y_values, label=filename)
+        subplot1.plot(x_values, y1_values, label=filename)
+        subplot2.plot(x_values, y2_values, label=filename)
 
-        if self.first_time == True:
-            self.first_time = False
-            # Shrink current axis by 20% to let some place for the legend at right
-            box = self.subplot.get_position()
-            self.subplot.set_position([box.x0, box.y0, box.width * 0.9, box.height])
         # Put a legend to the right of the current axis. Set font size
-        self.subplot.legend(loc='center left', bbox_to_anchor=(1, 0.5), prop={'size': 8})
+        subplot1.legend(loc='best', prop={'size': 8})
+        subplot1.grid(True)
 
         self.canvas.draw()
 
