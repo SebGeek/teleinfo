@@ -107,21 +107,22 @@ class Application(Frame):
                     y_values.append(float(row[1].replace(",", ".")))
                     index += 1
 
-        plt.xlabel("Date")
-        plt.ylabel("Puissance (Watt)")
-        #subplot = self.fig.add_subplot(111)
-        subplot = self.fig.add_subplot(1, 1, 1)
+        # "234" means "2x3 grid, 4th subplot".
+        subplot = self.fig.add_subplot(4, 1, self.file_nb)
         subplot.plot(x_values, y_values, label=filename)
 
         subplot.grid(True)
         if self.first_time == True:
-            self.first_time = False
-            # Shrink current axis by 20%
+            #self.first_time = False
+            # Shrink current axis by 20% to let some place for the legend at right
             box = subplot.get_position()
             subplot.set_position([box.x0, box.y0, box.width * 0.8, box.height])
 
         # Put a legend to the right of the current axis
         subplot.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+
+        plt.xlabel("Date")
+        plt.ylabel("Puissance (Watt)")
 
         self.canvas.draw()
 
