@@ -3,6 +3,7 @@
 
 import os
 import csv
+import datetime
 
 # Tkinter
 try:
@@ -15,13 +16,12 @@ except:
 import matplotlib
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 matplotlib.use('TkAgg')
 
-# - Axe X: afficher l'heure, sans la date
 # - Ajouter curseur
-# - Ne plas planter et fermer correctement l'appli avec la croix
 # - Sélectionner le fichier csv
-
+# - Ne plas planter et fermer correctement l'appli avec la croix
 
 LOG_FRAME = False
 
@@ -99,18 +99,17 @@ class Application(Frame):
 
             x_values = []
             y_values = []
-            index = 0
             for row in reader:
                 if "," in row[1]:
-                    x_values.append(index)
-                    y_values.append(float(row[1].replace(",", ".")))
-                    index += 1
+                    x_date = datetime.datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S.%f")
+                    x_values.append(x_date)
+                    y_value = float(row[1].replace(",", "."))
+                    y_values.append(y_value)
 
         # "234" means "2x3 grid, 4th subplot".
         subplot = self.fig.add_subplot(4, 1, self.file_nb)
         subplot.plot(x_values, y_values, label=filename)
 
-        subplot.grid(True)
         if self.first_time == True:
             #self.first_time = False
             # Shrink current axis by 20% to let some place for the legend at right
@@ -120,6 +119,23 @@ class Application(Frame):
         # Put a legend to the right of the current axis. Set font size
         subplot.legend(loc='center left', bbox_to_anchor=(1, 0.5), prop={'size': 8})
 
+        # format the ticks
+        years_fmt = mdates.DateFormatter('%Y-%m-%d')
+        subplot.xaxis.set_major_locator(mdates.DayLocator())
+        subplot.xaxis.set_major_formatter(years_fmt)
+        subplot.xaxis.set_minor_locator(mdates.HourLocator())
+
+        #datemin = datetime.date(2016, 3, 10) # year month day
+        #datemax = datetime.date(2016, 3, 16)
+        #subplot.set_xlim(datemin, datemax)
+        subplot.format_xdata = mdates.DateFormatter('%Y-%m-%d')
+
+        subplot.grid(True)
+
+        # rotates and right aligns the x labels, and moves the bottom of the axes up to make room for them
+        self.fig.autofmt_xdate()
+
+        # Labels
         plt.xlabel("Date")
         plt.ylabel("Puissance (Watt)")
 
