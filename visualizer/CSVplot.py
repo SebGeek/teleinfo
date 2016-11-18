@@ -17,6 +17,11 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 import matplotlib.pyplot as plt
 matplotlib.use('TkAgg')
 
+# - Axe X: afficher l'heure, sans la date
+# - Ajouter curseur
+# - Ne plas planter et fermer correctement l'appli avec la croix
+# - Sélectionner le fichier csv
+
 
 LOG_FRAME = False
 
@@ -140,14 +145,11 @@ if __name__ == '__main__':
     root = Tk()
     root.geometry("800x600")
 
-    current_dir = os.path.dirname(os.path.realpath(__file__))
-    icon_path = os.path.join(current_dir, 'icon.gif')
-
-    img = PhotoImage(file=icon_path)
-    root.tk.call('wm', 'iconphoto', root._w, img)
-
     app = Application(root, title="CSV Plot")
+    if os.path.exists('CSVplot.ico'):
+        app.winfo_toplevel().iconbitmap('CSVplot.ico')
     app.mainloop()
 
-    print "bye bye !"
+    print "bye bye 1"
     plt.close()
+    print "bye bye 2"
