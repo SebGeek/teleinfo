@@ -1,12 +1,6 @@
 #!/usr/bin/python
 # -*- coding:utf-8 -*-
 
-#############################################
-#
-# Teleinfo Visualizer
-#
-#############################################
-
 import os
 import csv
 
@@ -152,7 +146,7 @@ if __name__ == '__main__':
     img = PhotoImage(file=icon_path)
     root.tk.call('wm', 'iconphoto', root._w, img)
 
-    app = Application(root, title="Teleinfo visualizer")
+    app = Application(root, title="CSV Plot")
     app.mainloop()
 
     print "bye bye !"
