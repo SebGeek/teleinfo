@@ -23,7 +23,7 @@ prix_HP  = 0.1043 * 1.2    # prix HP TTC
 
 
 # Global variable shared with the thread
-last_frame_read = {"HCHC":0, "HCHP":0, "PTEC":"xx", "PAPP":0}
+last_frame_read = {"HCHC": 0, "HCHP": 0, "PTEC": "xx", "PAPP": 0}
 
 
 class Teleinfo(threading.Thread):
@@ -58,11 +58,10 @@ class Teleinfo(threading.Thread):
             self.logger.error("Error opening Teleinfo modem '%s' : %s" % (self._device, traceback.format_exc()) )
             self.terminate()
 
-
     def close(self):
         self.RqTerminate = True
         while self.IsTerminated != True:
-            pass
+            time.sleep(0.1)
 
         if self._ser != None and self._ser.isOpen():
             self._ser.close()
@@ -249,7 +248,7 @@ def main():
                            str(puissance_apparente)   + ";" +
                            str(periode_tarifaire)     + ";" +
                            str(index_HC_current)      + ";" +
-                           str(index_HP_current)      )
+                           str(index_HP_current))
 
             previoustime += period
 
@@ -276,6 +275,14 @@ if __name__ == "__main__":
     IMAX    : Intensité maximale (en ampères)
     PAPP    : Puissance apparente (en Volt.ampères)
     HHPHC   : Groupe horaire si option = heures creuses ou tempo
+
+
+    moins souvent.
+    Dans CSV:
+    colonne 0: date/heure
+    colonne 1: prix (€) = index HC * Prix HC + index HP * Prix HP
+    colonne 2: puissance (W)
+    colonne 3: HC=0, HP=1
     '''
 
     # read arguments
@@ -285,7 +292,7 @@ if __name__ == "__main__":
 
     # Create status log (for info or errors)
     # store in file and display to console
-    logger    = func_logger("status.log")
+    logger = func_logger("status.log")
 
     # Create results log
     # store in file but do not display in console
