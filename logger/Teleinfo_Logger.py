@@ -209,13 +209,10 @@ def main():
     first_time = True
 
     # Header
-    store_val.info("date;" +
-                   "Prix en euros depuis le lancement de ce logger;" +
-                   "Index total (HC+HP) en Wh depuis le lancement de ce logger;" +
-                   "PAPP: Puissance apparente en V.A;" +
-                   "PTEC: Periode tarifaire (HC=0, HP=1);" +
-                   "HCHC: Index Heures creuses en Wh;" +
-                   "HCHP: Index Heures pleines en Wh")
+    store_val.info("Date/Heure;" +
+                   "Prix (€);" +
+                   "Puissance apparente en V.A;" +
+                   "Période tarifaire (HC=0, HP=1);")
 
     while time.time() <= endtime:
         if time.time() >= (previoustime + period):
@@ -251,7 +248,7 @@ def main():
 
 if __name__ == "__main__":
     '''
-    A exécuter avec: ./Teleinfo_Logger.py -o ./log/log.csv
+    A exécuter avec: ./Teleinfo_Logger.py -o ../log/log.csv
 
     Pour ne pas fermer le programme en quittant la session SSH, utiliser: screen
     Pour se détacher: ctrl+a puis d
