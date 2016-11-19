@@ -96,14 +96,15 @@ class Application(Frame):
 
     def plot_figure(self):
         if self.first_time == True:
+            subplot = []
             # "2, 3, 4" means "2x3 grid, 4th subplot1".
-            subplot1 = self.fig.add_subplot(2, 1, 1)
-            subplot2 = self.fig.add_subplot(2, 1, 2)
+            for i in range(4):
+                subplot.append(self.fig.add_subplot(4, 1, i+1))
 
-            # format the ticks
-            format_ticks = mdates.DateFormatter('%H')
-            subplot1.xaxis.set_major_locator(mdates.HourLocator())
-            subplot1.xaxis.set_major_formatter(format_ticks)
+                # format the ticks
+                format_ticks = mdates.DateFormatter('%H')
+                subplot[i].xaxis.set_major_locator(mdates.HourLocator())
+                subplot[i].xaxis.set_major_formatter(format_ticks)
 
             # Labels
             plt.xlabel("Date")
@@ -117,33 +118,30 @@ class Application(Frame):
         reader = csv.reader(csvfile, delimiter=";")
 
         x_values = []
-        y1_values = []
-        y2_values = []
-        first_y1_value = True
         for row in reader:
-            if "," in row[1]:
-                x_date = datetime.datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S.%f")
-                if self.first_date == True:
-                    self.first_date = x_date
-                x_date = x_date.replace(year=self.first_date.year, month=self.first_date.month, day=self.first_date.day)
-                x_values.append(x_date)
+            x_date = datetime.datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S.%f")
+            if self.first_date == True:
+                self.first_date = x_date
+            x_date = x_date.replace(year=self.first_date.year, month=self.first_date.month, day=self.first_date.day)
+            x_values.append(x_date)
 
-                y1_value = float(row[1].replace(",", "."))
-                y2_value = float(row[4].replace(",", "."))
-                if first_y1_value == True:
-                    first_y1_value = y1_value
-                    first_y2_value = y2_value
-                y1_value = y1_value - first_y1_value
-                y2_value = y2_value - first_y2_value
-                y1_values.append(y1_value)
-                y2_values.append(y2_value)
+        for i in range(4):
+            y_values = []
+            first_y_value = True
 
-        subplot1.plot(x_values, y1_values, label=filename)
-        subplot2.plot(x_values, y2_values, label=filename)
+            csvfile.seek(0)
+            for row in reader:
+                if "," in row[1]:
+                    y_value = float(row[i+1].replace(",", "."))
+                    if first_y_value == True:
+                        first_y_value = y_value
+                    y_value = y_value - first_y_value
+                    y_values.append(y_value)
+            subplot[i].plot(x_values, y_values, label=filename)
 
-        # Put a legend to the right of the current axis. Set font size
-        subplot1.legend(loc='best', prop={'size': 8})
-        subplot1.grid(True)
+            # Put a legend to the right of the current axis. Set font size
+            subplot[i].legend(loc='best', prop={'size': 8})
+            subplot[i].grid(True)
 
         self.canvas.draw()
 
