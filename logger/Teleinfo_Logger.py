@@ -16,8 +16,8 @@ import time
 # Device name
 gDeviceName = '/dev/ttyAMA0'
 
-duration = 100 * 24 * 3600 # durée avant d'arrêter le log: 100 days
-period   = 10              # période de mesure en secondes
+duration = 365 * 24 * 3600 # durée avant d'arrêter le log: 365 days
+period   = 30              # période de mesure en secondes
 prix_HC  = 0.0638 * 1.2    # prix HC TTC pour 1 kWh (TVA à 20%, voir facture du 3/2/2016)
 prix_HP  = 0.1043 * 1.2    # prix HP TTC
 
@@ -226,13 +226,11 @@ def main():
             if first_time == True:
                 index_HC_offset = index_HC_current
                 index_HP_offset = index_HP_current
-                index_total = 0
                 prix = 0
                 first_time = False
             else:
                 index_HC    = index_HC_current - index_HC_offset
                 index_HP    = index_HP_current - index_HP_offset
-                index_total = index_HC + index_HP
                 prix        = (index_HC / 1000. * prix_HC) + (index_HP / 1000. * prix_HP)
 
             if last_frame_read["PTEC"][0:2] == 'HC':
@@ -242,13 +240,10 @@ def main():
 
             puissance_apparente = int(last_frame_read["PAPP"])
 
-            store_val.info(str(date)                  + ";" +
-                           str(prix).replace('.',',') + ";" +
-                           str(index_total)           + ";" +
-                           str(puissance_apparente)   + ";" +
-                           str(periode_tarifaire)     + ";" +
-                           str(index_HC_current)      + ";" +
-                           str(index_HP_current))
+            store_val.info(str(date)                + ";" +
+                           str(prix)                + ";" +
+                           str(puissance_apparente) + ";" +
+                           str(periode_tarifaire))
 
             previoustime += period
 
@@ -276,9 +271,6 @@ if __name__ == "__main__":
     PAPP    : Puissance apparente (en Volt.ampères)
     HHPHC   : Groupe horaire si option = heures creuses ou tempo
 
-
-    moins souvent.
-    Dans CSV:
     colonne 0: date/heure
     colonne 1: prix (€) = index HC * Prix HC + index HP * Prix HP
     colonne 2: puissance (W)
