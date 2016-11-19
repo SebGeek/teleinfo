@@ -95,11 +95,21 @@ class Application(Frame):
             self.textPad.grid(row=0, column=0)
 
     def plot_figure(self):
+
+        filename = "log.csv.2016-03-1" + str(self.file_nb)
+        self.file_nb += 1
+        csvfile = open("../log/" + filename, 'rb')
+        reader = csv.reader(csvfile, delimiter=";")
+
         if self.first_time == True:
+            # Read the number of columns
+            first_line = csvfile.readline()
+            nb_col = first_line.count(";") - 1
+
             subplot = []
             # "2, 3, 4" means "2x3 grid, 4th subplot1".
-            for i in range(4):
-                subplot.append(self.fig.add_subplot(4, 1, i+1))
+            for i in range(nb_col):
+                subplot.append(self.fig.add_subplot(nb_col, 1, i+1))
 
                 # format the ticks
                 format_ticks = mdates.DateFormatter('%H')
@@ -107,17 +117,13 @@ class Application(Frame):
                 subplot[i].xaxis.set_major_formatter(format_ticks)
 
             # Labels
-            plt.xlabel("Date")
-            plt.ylabel("Puissance (Watt)")
-            plt.tight_layout()
+            plt.xlabel("Temps (h)")
+            plt.ylabel("Puissance (W)")
 
-        filename = "log.csv.2016-03-1" + str(self.file_nb)
-
-        csvfile = open("../log/" + filename, 'rb')
-        self.file_nb += 1
-        reader = csv.reader(csvfile, delimiter=";")
+            plt.subplots_adjust(left=0.06, right=0.99, bottom=0.08, top=0.93, hspace=.001)
 
         x_values = []
+        csvfile.seek(0)
         for row in reader:
             x_date = datetime.datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S.%f")
             if self.first_date == True:
@@ -125,7 +131,7 @@ class Application(Frame):
             x_date = x_date.replace(year=self.first_date.year, month=self.first_date.month, day=self.first_date.day)
             x_values.append(x_date)
 
-        for i in range(4):
+        for i in range(nb_col):
             y_values = []
             first_y_value = True
 
@@ -163,7 +169,7 @@ class Application(Frame):
 
 if __name__ == '__main__':
     root = Tk()
-    root.geometry("800x600")
+    root.state('zoomed')
 
     app = Application(root, title="CSV Plot")
     if os.path.exists('CSVplot.ico'):
