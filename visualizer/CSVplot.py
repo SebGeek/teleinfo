@@ -4,7 +4,6 @@
 import os
 import csv
 import datetime
-import operator
 import inspect
 
 # Tkinter
@@ -30,7 +29,7 @@ matplotlib.use('TkAgg')
 
 LOG_FRAME = False
 window_zoomed = False
-
+request_file = "Z:/teleinfo/log/log.csv.2016-03-13"
 
 class Application(Frame):
     def __init__(self, root, title):
@@ -121,7 +120,10 @@ class Application(Frame):
             self.textPad.grid(row=0, column=0)
 
     def plot_figure(self):
-        filename = tkFileDialog.askopenfilename(initialdir=inspect.currentframe())
+        if request_file == True:
+            filename = tkFileDialog.askopenfilename(initialdir=inspect.currentframe())
+        else:
+            filename = request_file
         csvfile = open(filename, 'rb')
         reader = csv.reader(csvfile, delimiter=";")
 
@@ -182,26 +184,11 @@ class Application(Frame):
             subplot[i].legend(loc='best', prop={'size': 8})
             subplot[i].grid(True)
 
-        tt = []
-        x_values_int = []
-        for idx, x in enumerate(x_values):
-            x_values_int.append(idx)
-
-        for index in xrange(len(x_values)):
-            tt.append((x_values_int[index], y_values[index]))
-
-        tt = sorted(tt, key=operator.itemgetter(0))
-        xx = map(operator.itemgetter(0), tt)
-        yy = map(operator.itemgetter(1), tt)
-        nn = map(operator.itemgetter(0), tt)
-        zz = map(operator.itemgetter(1), tt)
-
         #  use keys 'c', 'i' and mouse middle button for cursors
-        self.cursor = Cursor(subplot[0], self.canvas, xx, yy, nn, zz)
+        self.cursor = Cursor(subplot[0], self.canvas)
         self.fig.canvas.mpl_connect('key_press_event', self.__key)
 
         self.canvas.draw()
-
 
     def do_quit(self):
         plt.close('all')
@@ -224,7 +211,7 @@ class Application(Frame):
 class Cursor(object):
     # Cursor, crosshair snaps to the nearest point
     # x is assumed to be sorted
-    def __init__(self, axes, canvas, x, y, n, z):
+    def __init__(self, axes, canvas):
         self.axes = axes
         self.canvas = canvas
         hold = self.axes.ishold()
@@ -236,75 +223,54 @@ class Cursor(object):
         self.crossy, = axes.plot((minx, minx), (miny, miny), 'b-', zorder=4)  # the vert crosshair
         self.ref_crossx, = axes.plot((minx, minx), (miny, miny), 'r-', zorder=4)  # the horiz crosshair (ref cursor)
         self.ref_crossy, = axes.plot((minx, minx), (miny, miny), 'r-', zorder=4)  # the horiz crosshair (ref cursor)
-        self.x = x
-        self.y = y
-        self.n = n
-        self.z = z
         self.axes.hold(hold)
         self.RefCursorOn = False
-        print "cursor INIT"
 
     def close(self):
         self.axes.hold(False)
 
-    def _get_xy(self, x, y):
-        """Return `(x_p, y_p, i_p)` for the point nearest `(x, y)`"""
-        dist = float("infinity")
-        indx = -1
-        # calculate scale (depends from zoom factor)
-        minx, maxx = self.axes.get_xlim()
-        miny, maxy = self.axes.get_ylim()
-        xs = maxx - minx
-        ys = maxy - miny
-        xyzip = zip(self.x, self.y, range(len(self.x)))
-        for xp, yp, i in xyzip:
-            d = (ys * (x - xp)) ** 2 + (xs * (y - yp)) ** 2
-            if d < dist:
-                dist = d
-                xpm = xp
-                ypm = yp
-                indx = i
-        return xpm, ypm, indx
-
     def mouse_move(self, event):
         if not event.inaxes:
             return
+
         ax = event.inaxes
+        x, y = event.xdata, event.ydata
+
+        # update the line positions
         minx, maxx = ax.get_xlim()
         miny, maxy = ax.get_ylim()
-        x, y, i = self._get_xy(event.xdata, event.ydata)
-        z = self.z[i]
-        # update the line positions
         self.crossx.set_data((minx, maxx), (y, y))
         self.crossy.set_data((x, x), (miny, maxy))
-        # update the label
+
+        x = matplotlib.dates.num2date(x, tz=None)
         if not self.RefCursorOn:
             # absolute position
-            print "absolute: ", i, x, y
-            #self.txt.set_text('pkt={:d}, t={:1.6f}, y={:1.6f}, curve #{:d}'.format(self.n[i], x, y, z))
+            print "absolute: ", x, y
         else:
             # differential measure (comparison to ref)
             print "differential: ", x - self.ref_x, y - self.ref_y
-            #self.txt.set_text('delta t={:1.6f}, delta y={:1.6f}'.format(x - self.ref_x, y - self.ref_y))
+
         self.canvas.draw()
 
+    # Mouse middle click
     def mouse_click(self, event):
         if not event.inaxes:
             return
+
         if event.button != 2:
             return  # ignore non-button-2 clicks
-        print "mouse_click"
+
         ax = event.inaxes
+        x, y = event.xdata, event.ydata
+
+        # update reference cursor position
         minx, maxx = ax.get_xlim()
         miny, maxy = ax.get_ylim()
-        x, y, i = self._get_xy(event.xdata, event.ydata)
-        # update reference cursor position
         self.ref_crossx.set_data((minx, maxx), (y, y))
         self.ref_crossy.set_data((x, x), (miny, maxy))
-        self.ref_x = x
+        self.ref_x = matplotlib.dates.num2date(x, tz=None)
         self.ref_y = y
-        self.ref_i = i
-        self.ref_z = self.z[i]
+
         self.canvas.draw()
         self.RefCursorOn = True
 
@@ -314,10 +280,12 @@ class Cursor(object):
         miny, _maxy = self.axes.get_ylim()
         self.crossx.set_data((minx, minx), (miny, miny))
         self.crossy.set_data((minx, minx), (miny, miny))
+
         if self.RefCursorOn:
             self.ref_crossx.set_data((minx, minx), (miny, miny))
             self.ref_crossy.set_data((minx, minx), (miny, miny))
             self.RefCursorOn = False
+
         self.canvas.draw()
 
 
