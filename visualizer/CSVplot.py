@@ -19,10 +19,11 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 matplotlib.use('TkAgg')
 
-LOG_FRAME = False
 window_zoomed = True
-request_file = True #"Z:/teleinfo/log/log.csv.2016-11-19"
+request_file = True # "Z:/teleinfo/log/log.csv.2016-11-19"
 
+# Use key 'c' to activate cursor
+# Use mouse middle button for a second cursor to show difference
 
 class Application(Frame):
     def __init__(self, root, title):
@@ -57,32 +58,22 @@ class Application(Frame):
         self.update()
 
     def display(self, msg):
-        if LOG_FRAME == True:
-            self.textPad.insert('insert', msg + "\n")
-            self.textPad.see('end')
-
         print msg
 
     def __key(self, event):
-        if str(event.key).endswith("i") and self.CursorOn:
-            print "interactive"
-            return
-
         if (str(event.key).endswith("c") and self.CursorOn) or str(event.key).endswith("escape"):
-            #cursors OFF
+            # cursors OFF
             self.fig.canvas.mpl_disconnect(self.binding_id_move)
             self.fig.canvas.mpl_disconnect(self.binding_id_click)
             self.cursor.clear_cursors()
             self.CursorOn = False
-            print "cursor OFF"
             return
 
         if str(event.key).endswith("c") and not self.CursorOn:
-            #cursors ON
+            # cursors ON
             self.binding_id_move = self.fig.canvas.mpl_connect('motion_notify_event', self.cursor.mouse_move)
             self.binding_id_click = self.fig.canvas.mpl_connect('button_press_event', self.cursor.mouse_click)
             self.CursorOn = True
-            print "cursor ON"
             return
 
     def __create_widgets(self):
@@ -100,17 +91,6 @@ class Application(Frame):
         toolbar.grid(row=row_current, column=0, sticky="nw")
 
         self.plot_figure()
-
-        # Log frame
-        if LOG_FRAME == True:
-            row_current += 1
-            self.root.rowconfigure(row_current, weight=1)
-            self.Log_frame = LabelFrame(self.root, text='Log', padx=2, pady=2)
-            self.Log_frame.rowconfigure(0, weight=1)
-            self.Log_frame.grid(row=row_current, column=0, sticky=NSEW, padx=5, pady=5)
-            self.Log_frame.columnconfigure(0, weight=1)
-            self.textPad = ScrolledText(self.Log_frame, width=110, height=10)
-            self.textPad.grid(row=0, column=0)
 
     def plot_figure(self):
         if request_file == True:
@@ -177,7 +157,6 @@ class Application(Frame):
             subplot[i].legend(loc='best', prop={'size': 8})
             subplot[i].grid(True)
 
-        #  use keys 'c', 'i' and mouse middle button for cursors
         self.cursor = Cursor(subplot[0], self.canvas)
         self.fig.canvas.mpl_connect('key_press_event', self.__key)
 
@@ -203,8 +182,7 @@ class Application(Frame):
 
 
 class Cursor(object):
-    # Cursor, crosshair snaps to the nearest point
-    # x is assumed to be sorted
+
     def __init__(self, axes, canvas):
         self.axes = axes
         self.canvas = canvas
@@ -213,8 +191,8 @@ class Cursor(object):
         # create cursors at minx, miny (not 0, to keep autoscaling)
         minx, _maxx = self.axes.get_xlim()
         miny, _maxy = self.axes.get_ylim()
-        self.crossx, = axes.plot((minx, minx), (miny, miny), 'b-', zorder=4)  # the horiz crosshair
-        self.crossy, = axes.plot((minx, minx), (miny, miny), 'b-', zorder=4)  # the vert crosshair
+        self.crossx, = axes.plot((minx, minx), (miny, miny), 'b-', zorder=4)      # the horiz crosshair
+        self.crossy, = axes.plot((minx, minx), (miny, miny), 'b-', zorder=4)      # the vert crosshair
         self.ref_crossx, = axes.plot((minx, minx), (miny, miny), 'r-', zorder=4)  # the horiz crosshair (ref cursor)
         self.ref_crossy, = axes.plot((minx, minx), (miny, miny), 'r-', zorder=4)  # the horiz crosshair (ref cursor)
         self.axes.hold(hold)
