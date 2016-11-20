@@ -5,14 +5,14 @@ import os
 import csv
 import datetime
 import operator
+import inspect
 
 # Tkinter
-try:
-    from Tkinter import *
-    from ScrolledText import *
-    import tkMessageBox
-except:
-    print "To install Tkinter: sudo apt-get install python-tk"
+from Tkinter import *
+from ScrolledText import *
+import tkMessageBox
+import tkFileDialog
+
 # Matplotlib
 import matplotlib
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
@@ -29,10 +29,10 @@ matplotlib.use('TkAgg')
 # - ajout d'annotation (texte) où on veut
 
 LOG_FRAME = False
+window_zoomed = False
 
 
 class Application(Frame):
-
     def __init__(self, root, title):
         self.root = root
         Frame.__init__(self, self.root)
@@ -55,7 +55,6 @@ class Application(Frame):
         help_menu.add_command(label="About...", command=self.about_command)
 
         # Main window
-        self.file_nb = 1
         self.first_time = True
         self.first_date = True
         self.CursorOn = False
@@ -73,21 +72,25 @@ class Application(Frame):
         print msg
 
     def __key(self, event):
-        if (str(event.key).endswith("i") and (self.CursorOn)):
-            self.__decodePacket(str(self.cursor.pktNumber))
+        if str(event.key).endswith("i") and self.CursorOn:
+            print "interactive"
             return
+
         if (str(event.key).endswith("c") and self.CursorOn) or str(event.key).endswith("escape"):
             #cursors OFF
             self.fig.canvas.mpl_disconnect(self.binding_id_move)
             self.fig.canvas.mpl_disconnect(self.binding_id_click)
             self.cursor.clear_cursors()
-            self.CursorOn=False
+            self.CursorOn = False
+            print "cursor OFF"
             return
-        if str(event.key).endswith("c") and not(self.CursorOn):
+
+        if str(event.key).endswith("c") and not self.CursorOn:
             #cursors ON
             self.binding_id_move = self.fig.canvas.mpl_connect('motion_notify_event', self.cursor.mouse_move)
             self.binding_id_click = self.fig.canvas.mpl_connect('button_press_event', self.cursor.mouse_click)
-            self.CursorOn=True
+            self.CursorOn = True
+            print "cursor ON"
             return
 
     def __create_widgets(self):
@@ -118,20 +121,18 @@ class Application(Frame):
             self.textPad.grid(row=0, column=0)
 
     def plot_figure(self):
-
-        filename = "log.csv.2016-03-1" + str(self.file_nb)
-        self.file_nb += 1
-        csvfile = open("../log/" + filename, 'rb')
+        filename = tkFileDialog.askopenfilename(initialdir=inspect.currentframe())
+        csvfile = open(filename, 'rb')
         reader = csv.reader(csvfile, delimiter=";")
 
         if self.first_time == True:
             # Read the number of columns
             first_line = csvfile.readline()
-            nb_col = first_line.count(";") - 1
+            nb_col = first_line.count(";")
 
             subplot = []
-            # "2, 3, 4" means "2x3 grid, 4th subplot1".
             for i in range(nb_col):
+                # "2, 3, 4" means "2x3 grid, 4th subplot1".
                 subplot.append(self.fig.add_subplot(nb_col, 1, i+1))
 
                 # format the ticks
@@ -147,24 +148,33 @@ class Application(Frame):
 
         x_values = []
         csvfile.seek(0)
+        first_line = True
         for row in reader:
-            x_date = datetime.datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S.%f")
-            if self.first_date == True:
-                self.first_date = x_date
-            x_date = x_date.replace(year=self.first_date.year, month=self.first_date.month, day=self.first_date.day)
-            x_values.append(x_date)
+            if first_line == True:
+                # Evite la première ligne qui peut être une ligne de titre
+                first_line = False
+            else:
+                x_date = datetime.datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S.%f")
+                if self.first_date == True:
+                    self.first_date = x_date
+                x_date = x_date.replace(year=self.first_date.year, month=self.first_date.month, day=self.first_date.day)
+                x_values.append(x_date)
 
         for i in range(nb_col):
             y_values = []
             first_y_value = True
 
             csvfile.seek(0)
+            first_line = True
             for row in reader:
-                if "," in row[1]:
+                if first_line == True:
+                    # Evite la première ligne qui peut être une ligne de titre
+                    first_line = False
+                else:
                     y_value = float(row[i+1].replace(",", "."))
                     if first_y_value == True:
                         first_y_value = y_value
-                    y_value = y_value - first_y_value
+                    y_value -= first_y_value
                     y_values.append(y_value)
             subplot[i].plot(x_values, y_values, label=filename)
 
@@ -173,15 +183,22 @@ class Application(Frame):
             subplot[i].grid(True)
 
         tt = []
+        x_values_int = []
+        for idx, x in enumerate(x_values):
+            x_values_int.append(idx)
+
+        for index in xrange(len(x_values)):
+            tt.append((x_values_int[index], y_values[index]))
+
         tt = sorted(tt, key=operator.itemgetter(0))
         xx = map(operator.itemgetter(0), tt)
         yy = map(operator.itemgetter(1), tt)
-        nn = map(operator.itemgetter(2), tt)
-        zz = map(operator.itemgetter(3), tt)
+        nn = map(operator.itemgetter(0), tt)
+        zz = map(operator.itemgetter(1), tt)
 
         #  use keys 'c', 'i' and mouse middle button for cursors
         self.cursor = Cursor(subplot[0], self.canvas, xx, yy, nn, zz)
-        _binding_key_press = self.fig.canvas.mpl_connect('key_press_event', self.__key)
+        self.fig.canvas.mpl_connect('key_press_event', self.__key)
 
         self.canvas.draw()
 
@@ -200,6 +217,8 @@ class Application(Frame):
 
     def about_command(self):
         tkMessageBox.showinfo("About", "CSV plotter\n\nS. Auray\n14/11/2016")
+
+#########################################################################################################
 
 
 class Cursor(object):
@@ -221,10 +240,9 @@ class Cursor(object):
         self.y = y
         self.n = n
         self.z = z
-        self.txt = self.axes.title
         self.axes.hold(hold)
         self.RefCursorOn = False
-        self.pktNumber = 0
+        print "cursor INIT"
 
     def close(self):
         self.axes.hold(False)
@@ -246,15 +264,15 @@ class Cursor(object):
                 xpm = xp
                 ypm = yp
                 indx = i
-        return (xpm, ypm, indx)
+        return xpm, ypm, indx
 
     def mouse_move(self, event):
-        if not event.inaxes: return
+        if not event.inaxes:
+            return
         ax = event.inaxes
         minx, maxx = ax.get_xlim()
         miny, maxy = ax.get_ylim()
         x, y, i = self._get_xy(event.xdata, event.ydata)
-        self.pktNumber = self.n[i]
         z = self.z[i]
         # update the line positions
         self.crossx.set_data((minx, maxx), (y, y))
@@ -262,10 +280,12 @@ class Cursor(object):
         # update the label
         if not self.RefCursorOn:
             # absolute position
-            self.txt.set_text('pkt={:d}, t={:1.6f}, y={:1.6f}, curve #{:d}'.format(self.n[i], x, y, z))
+            print "absolute: ", i, x, y
+            #self.txt.set_text('pkt={:d}, t={:1.6f}, y={:1.6f}, curve #{:d}'.format(self.n[i], x, y, z))
         else:
             # differential measure (comparison to ref)
-            self.txt.set_text('delta t={:1.6f}, delta y={:1.6f}'.format(x - self.ref_x, y - self.ref_y))
+            print "differential: ", x - self.ref_x, y - self.ref_y
+            #self.txt.set_text('delta t={:1.6f}, delta y={:1.6f}'.format(x - self.ref_x, y - self.ref_y))
         self.canvas.draw()
 
     def mouse_click(self, event):
@@ -273,6 +293,7 @@ class Cursor(object):
             return
         if event.button != 2:
             return  # ignore non-button-2 clicks
+        print "mouse_click"
         ax = event.inaxes
         minx, maxx = ax.get_xlim()
         miny, maxy = ax.get_ylim()
@@ -297,15 +318,17 @@ class Cursor(object):
             self.ref_crossx.set_data((minx, minx), (miny, miny))
             self.ref_crossy.set_data((minx, minx), (miny, miny))
             self.RefCursorOn = False
-        self.txt.set_text('')
         self.canvas.draw()
 
 
 if __name__ == '__main__':
-    root = Tk()
-    root.state('zoomed')
+    root_window = Tk()
+    if window_zoomed == True:
+        root_window.state('zoomed')
+    else:
+        root_window.geometry("800x600")
 
-    app = Application(root, title="CSV Plot")
+    app = Application(root_window, title="CSV Plot")
     if os.path.exists('CSVplot.ico'):
         app.winfo_toplevel().iconbitmap('CSVplot.ico')
     app.mainloop()

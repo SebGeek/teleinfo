@@ -210,9 +210,9 @@ def main():
 
     # Header
     store_val.info("Date/Heure;" +
-                   "Prix (€);" +
+                   "Prix (€ TTC);" +
                    "Puissance apparente en V.A;" +
-                   "Période tarifaire (HC=0, HP=1);")
+                   "Période tarifaire (HC=0, HP=1)")
 
     while time.time() <= endtime:
         if time.time() >= (previoustime + period):
