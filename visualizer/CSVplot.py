@@ -20,10 +20,15 @@ from cursor import Cursor
 matplotlib.use('TkAgg')
 
 window_zoomed = True
-request_file = True # "Z:/teleinfo/log/log.csv.2016-11-19"
+request_file = "Z:/teleinfo/log/log.csv.2016-11-19"
 
 # Use key 'c' to activate cursor
 # Use mouse middle button for a second cursor to show difference
+
+# curseur sur tous les graphs
+# cas où la premiere colonne n'est pas une date
+# prise en compte de la premiere ligne pour poser label des axes Y
+
 
 class Application(Frame):
     def __init__(self, root, title):
@@ -35,13 +40,10 @@ class Application(Frame):
         menu = Menu(self.root)
         self.root.config(menu=menu)
 
-        refresh_menu = Menu(menu, tearoff=False)
-        menu.add_cascade(label="Refresh", menu=refresh_menu)
-        refresh_menu.add_command(label="refresh_all", command=self.refresh_all)
-
-        action_menu = Menu(menu, tearoff=False)
-        menu.add_cascade(label="Action", menu=action_menu)
-        action_menu.add_command(label="do_quit", command=self.do_quit)
+        menu1 = Menu(menu, tearoff=False)
+        menu.add_cascade(label="Fichier", menu=menu1)
+        menu1.add_command(label="Charger CSV", command=self.load_CSV)
+        menu1.add_command(label="Quitter", command=self.do_quit)
 
         help_menu = Menu(menu, tearoff=False)
         menu.add_cascade(label="Help", menu=help_menu)
@@ -57,7 +59,8 @@ class Application(Frame):
         # Update window graphics
         self.update()
 
-    def display(self, msg):
+    @staticmethod
+    def display(msg):
         print msg
 
     def __key(self, event):
@@ -157,7 +160,7 @@ class Application(Frame):
             subplot[i].legend(loc='best', prop={'size': 8})
             subplot[i].grid(True)
 
-        self.cursor = Cursor(subplot[0], self.canvas)
+        self.cursor = Cursor(subplot, self.canvas)
         self.fig.canvas.mpl_connect('key_press_event', self.__key)
 
         self.canvas.draw()
@@ -166,8 +169,8 @@ class Application(Frame):
         plt.close('all')
         self.root.quit()
 
-    def refresh_all(self):
-        self.display("refresh_all")
+    def load_CSV(self):
+        self.display("load_CSV")
 
         self.plot_figure()
 

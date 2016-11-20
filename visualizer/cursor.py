@@ -10,17 +10,22 @@ matplotlib.use('TkAgg')
 class Cursor(object):
 
     def __init__(self, axes, canvas):
-        self.axes = axes
+        self.axes_list = axes
+        self.axes = axes[0]
         self.canvas = canvas
         hold = self.axes.ishold()
         self.axes.hold(True)
+
         # create cursors at minx, miny (not 0, to keep autoscaling)
         minx, _maxx = self.axes.get_xlim()
         miny, _maxy = self.axes.get_ylim()
-        self.crossx, = axes.plot((minx, minx), (miny, miny), 'b-', zorder=4)      # the horiz crosshair
-        self.crossy, = axes.plot((minx, minx), (miny, miny), 'b-', zorder=4)      # the vert crosshair
-        self.ref_crossx, = axes.plot((minx, minx), (miny, miny), 'r-', zorder=4)  # the horiz crosshair (ref cursor)
-        self.ref_crossy, = axes.plot((minx, minx), (miny, miny), 'r-', zorder=4)  # the horiz crosshair (ref cursor)
+
+        #self.axes_list
+        self.crossx,     = self.axes.plot((minx, minx), (miny, miny), 'b-', zorder=4)  # the horiz crosshair
+        self.crossy,     = self.axes.plot((minx, minx), (miny, miny), 'b-', zorder=4)  # the vert crosshair
+        self.ref_crossx, = self.axes.plot((minx, minx), (miny, miny), 'r-', zorder=4)  # the horiz crosshair (ref cursor)
+        self.ref_crossy, = self.axes.plot((minx, minx), (miny, miny), 'r-', zorder=4)  # the horiz crosshair (ref cursor)
+
         self.axes.hold(hold)
         self.RefCursorOn = False
         self.annotation = None
