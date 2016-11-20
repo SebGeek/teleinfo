@@ -19,17 +19,10 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 matplotlib.use('TkAgg')
 
-# - Ajouter curseur
-# - sauvegarde derniere conf et recharge au prochain lancement
-# - Sélectionner le fichier csv
-# - teleinfo: colonnes prix, puissance, HC/HP
-# - Ne plas planter et fermer correctement l'appli avec la croix
-# - Save figure
-# - ajout d'annotation (texte) où on veut
-
 LOG_FRAME = False
-window_zoomed = False
-request_file = "Z:/teleinfo/log/log.csv.2016-03-13"
+window_zoomed = True
+request_file = True #"Z:/teleinfo/log/log.csv.2016-11-19"
+
 
 class Application(Frame):
     def __init__(self, root, title):
@@ -114,7 +107,7 @@ class Application(Frame):
             self.root.rowconfigure(row_current, weight=1)
             self.Log_frame = LabelFrame(self.root, text='Log', padx=2, pady=2)
             self.Log_frame.rowconfigure(0, weight=1)
-            self.Log_frame.grid(row=row_current, column=0, sticky = NSEW, padx=5, pady=5)
+            self.Log_frame.grid(row=row_current, column=0, sticky=NSEW, padx=5, pady=5)
             self.Log_frame.columnconfigure(0, weight=1)
             self.textPad = ScrolledText(self.Log_frame, width=110, height=10)
             self.textPad.grid(row=0, column=0)
@@ -130,12 +123,12 @@ class Application(Frame):
         if self.first_time == True:
             # Read the number of columns
             first_line = csvfile.readline()
-            nb_col = first_line.count(";")
+            self.nb_col = first_line.count(";")
 
             subplot = []
-            for i in range(nb_col):
+            for i in range(self.nb_col):
                 # "2, 3, 4" means "2x3 grid, 4th subplot1".
-                subplot.append(self.fig.add_subplot(nb_col, 1, i+1))
+                subplot.append(self.fig.add_subplot(self.nb_col, 1, i+1))
 
                 # format the ticks
                 format_ticks = mdates.DateFormatter('%H')
@@ -162,7 +155,7 @@ class Application(Frame):
                 x_date = x_date.replace(year=self.first_date.year, month=self.first_date.month, day=self.first_date.day)
                 x_values.append(x_date)
 
-        for i in range(nb_col):
+        for i in range(self.nb_col):
             y_values = []
             first_y_value = True
 
@@ -202,8 +195,9 @@ class Application(Frame):
         # Update window graphics
         self.update()
 
-    def about_command(self):
-        tkMessageBox.showinfo("About", "CSV plotter\n\nS. Auray\n14/11/2016")
+    @staticmethod
+    def about_command():
+        tkMessageBox.showinfo("About", "CSV plotter\n\nS. Auray\n20/11/2016")
 
 #########################################################################################################
 
@@ -225,6 +219,7 @@ class Cursor(object):
         self.ref_crossy, = axes.plot((minx, minx), (miny, miny), 'r-', zorder=4)  # the horiz crosshair (ref cursor)
         self.axes.hold(hold)
         self.RefCursorOn = False
+        self.annotation = None
 
     def close(self):
         self.axes.hold(False)
@@ -242,14 +237,24 @@ class Cursor(object):
         self.crossx.set_data((minx, maxx), (y, y))
         self.crossy.set_data((x, x), (miny, maxy))
 
-        x = matplotlib.dates.num2date(x, tz=None)
+        x_datetime = matplotlib.dates.num2date(x, tz=None)
         if not self.RefCursorOn:
             # absolute position
-            print "absolute: ", x, y
+            x_datetime_print = str(x_datetime)
+            y_print = "%.2f" % y
         else:
             # differential measure (comparison to ref)
-            print "differential: ", x - self.ref_x, y - self.ref_y
+            x_datetime_print = str(x_datetime - self.ref_x_datetime)
+            y_print = "%.2f" % (y - self.ref_y)
 
+        if "day" not in x_datetime_print:
+            x_datetime_print = x_datetime_print[x_datetime_print.find(" ")+1:]
+        x_datetime_print = x_datetime_print[:x_datetime_print.find(".")]
+
+        if self.annotation != None:
+            self.annotation.remove()
+        self.annotation = self.axes.annotate(x_datetime_print + "\n" + y_print, xy=(x, y),
+                                             xytext=(5, 5), textcoords='offset pixels', fontsize=9)
         self.canvas.draw()
 
     # Mouse middle click
@@ -268,7 +273,7 @@ class Cursor(object):
         miny, maxy = ax.get_ylim()
         self.ref_crossx.set_data((minx, maxx), (y, y))
         self.ref_crossy.set_data((x, x), (miny, maxy))
-        self.ref_x = matplotlib.dates.num2date(x, tz=None)
+        self.ref_x_datetime = matplotlib.dates.num2date(x, tz=None)
         self.ref_y = y
 
         self.canvas.draw()
@@ -301,6 +306,4 @@ if __name__ == '__main__':
         app.winfo_toplevel().iconbitmap('CSVplot.ico')
     app.mainloop()
 
-    print "bye bye 1"
     plt.close()
-    print "bye bye 2"
