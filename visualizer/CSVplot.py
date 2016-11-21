@@ -20,7 +20,8 @@ from cursor import Cursor
 matplotlib.use('TkAgg')
 
 window_zoomed = True
-request_file = "Z:/teleinfo/log/log.csv.2016-11-19"
+request_file = True
+#request_file = "Z:/teleinfo/log/log.csv.2016-11-19"
 
 # Use key 'c' to activate cursor
 # Use mouse middle button for a second cursor to show difference
