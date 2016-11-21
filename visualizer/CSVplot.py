@@ -91,8 +91,9 @@ class Application(Frame):
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.root)
         self.canvas._tkcanvas.config(background='white', borderwidth=0, highlightthickness=0)
         self.canvas.get_tk_widget().grid(row=row_current, column=0, sticky="nsew")
-        toolbar = NavigationToolbar2TkAgg(self.canvas, self.root)
-        toolbar.grid(row=row_current, column=0, sticky="nw")
+        if not os.name == "posix":
+            toolbar = NavigationToolbar2TkAgg(self.canvas, self.root)
+            toolbar.grid(row=row_current, column=0, sticky="nw")
 
         self.plot_figure()
 
@@ -186,13 +187,16 @@ class Application(Frame):
 if __name__ == '__main__':
     root_window = Tk()
     if window_zoomed == True:
-        root_window.state('zoomed')
+        w, h = root_window.winfo_screenwidth(), root_window.winfo_screenheight()
+        root_window.geometry("%dx%d+0+0" % (w, h))
     else:
         root_window.geometry("800x600")
 
     app = Application(root_window, title="CSV Plot")
-    if os.path.exists('CSVplot.ico'):
-        app.winfo_toplevel().iconbitmap('CSVplot.ico')
+
+    if not os.name == "posix":
+        if os.path.exists('CSVplot.ico'):
+            app.winfo_toplevel().iconbitmap('CSVplot.ico')
     app.mainloop()
 
     plt.close()
