@@ -22,14 +22,19 @@ matplotlib.use('TkAgg')
 window_zoomed = True
 request_file = True
 #request_file = "Z:/teleinfo/log/log.csv.2016-11-19"
+delimiter_def = ";"
 
 # Use key 'c' to activate cursor
 # Use mouse middle button for a second cursor to show difference
 
-# curseur sur tous les graphs
-# cas où la premiere colonne n'est pas une date
-# prise en compte de la premiere ligne pour poser label des axes Y
+# - cas où la premiere colonne n'est pas une date
+# - curseur sur tous les graphs
+# - prise en compte de la premiere ligne pour poser label des axes Y
+# - unité suivant ligne de titre entre parentheses
+# - annotation: appui sur touche 'a' puis ajoute une colonne dans le CSV
 
+# Fonctions:
+# compatible Linux/Windows
 
 class Application(Frame):
     def __init__(self, root, title):
@@ -103,12 +108,12 @@ class Application(Frame):
         else:
             filename = request_file
         csvfile = open(filename, 'rb')
-        reader = csv.reader(csvfile, delimiter=";")
+        reader = csv.reader(csvfile, delimiter=delimiter_def)
 
         if self.first_time == True:
             # Read the number of columns
             first_line = csvfile.readline()
-            self.nb_col = first_line.count(";")
+            self.nb_col = first_line.count(delimiter_def)
 
             subplot = []
             for i in range(self.nb_col):
