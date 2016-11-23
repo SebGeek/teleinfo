@@ -1,4 +1,4 @@
-Date/Heure;Prix (€ TTC);Puissance apparente en V.A;Période tarifaire (HC=0, HP=1)
+Date/Heure;Prix (euros TTC);Puissance apparente (V.A);Periode tarifaire (HC=0, HP=1)
 2016-11-19 22:18:44.369059;0;560;1
 2016-11-19 22:19:14.323879;0.00112644;1140;1
 2016-11-19 22:19:44.378971;0.00212772;780;1

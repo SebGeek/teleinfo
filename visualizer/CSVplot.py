@@ -20,23 +20,20 @@ from cursor import Cursor
 matplotlib.use('TkAgg')
 
 window_zoomed = True
-# request_file = True
-request_file = "../log/After_Simulation_TU4_CRS1.csv"
+request_file = True
+#request_file = "../log/After_Simulation_TU4_CRS1.csv"
 #request_file = "../log/log.csv.2016-11-19"
 #request_file = "Z:/teleinfo/log/log.csv.2016-11-19"
 
-# Use key 'c' to activate cursor
-# Use mouse middle button for a second cursor to show difference
-
+# TODO:
 # - curseur sur tous les graphs
 # - annotation: appui sur touche 'a' puis ajoute une colonne dans le CSV
-
-# - visualizer: premiere ligne avec titre/unites
 
 # Fonctions:
 # compatible Linux/Windows
 # gère première colonne en format date si respecte "%Y-%m-%d %H:%M:%S.%f"
-
+# Use key 'c' to activate cursor
+# Use mouse middle button for a second cursor to show difference
 
 
 class Application(Frame):
@@ -124,7 +121,10 @@ class Application(Frame):
             csvfile.seek(0)
             first_line = csvfile.readline().replace("\n", "")
             list_titles = first_line.split(delimiter_def)
-            self.nb_col = len(list_titles)
+            last_column_empty = 0
+            if list_titles[-1].strip() == "":
+                last_column_empty = 1
+            self.nb_col = len(list_titles) - last_column_empty
 
             # Detect the type of value in first column (reading second line)
             second_line = csvfile.readline().split(delimiter_def)
@@ -136,7 +136,7 @@ class Application(Frame):
                 self.x_value_type = "date"
 
             subplot = []
-            for i in range(self.nb_col-1):
+            for i in range(self.nb_col - 1):
                 # "2, 3, 4" means "2x3 grid, 4th subplot1".
                 subplot.append(self.fig.add_subplot(self.nb_col, 1, i+1))
 
@@ -150,10 +150,7 @@ class Application(Frame):
                 subplot[i].set_ylabel(val)
 
             # Labels
-            if self.x_value_type == "date":
-                plt.xlabel("Time (h)")
-            else:
-                plt.xlabel(list_titles[0])
+            plt.xlabel(list_titles[0])
 
             plt.subplots_adjust(left=0.08, right=0.99, bottom=0.08, top=0.93, hspace=.15)
 
@@ -173,9 +170,8 @@ class Application(Frame):
 
                 if self.first_x_value == True:
                     self.first_x_value = x_value
-                if self.x_value_type == "float":
-                    x_value -= self.first_x_value
-                else:
+                if self.x_value_type == "date":
+                    # Remove year/month/day information to display on 24h
                     x_value = x_value.replace(year=self.first_x_value.year, month=self.first_x_value.month, day=self.first_x_value.day)
 
                 x_values.append(x_value)
@@ -191,10 +187,13 @@ class Application(Frame):
                     # Evite la première ligne qui peut être une ligne de titre
                     first_line = False
                 else:
-                    y_value = float(row[i+1].replace(",", "."))
+                    try:
+                        y_value = float(row[i+1].replace(",", "."))
+                    except:
+                        self.display("error, not a float value: " + row[i+1])
                     if first_y_value == True:
                         first_y_value = y_value
-                    y_value -= first_y_value
+                    #y_value -= first_y_value
                     y_values.append(y_value)
             subplot[i].plot(x_values, y_values, label=filename)
 

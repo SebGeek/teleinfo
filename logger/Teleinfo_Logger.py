@@ -72,9 +72,9 @@ class Teleinfo(threading.Thread):
 
     def read_serial(self):
         """ Fetch one full frame for serial port
-        If some part of the frame is corrupted,
-        it waits until the next one, so if you have corruption issue,
+        If some part of the frame is corrupted, it waits until the next one, so if you have corruption issue,
         this method can take time but it ensures that the frame returned is valid
+
         @return frame : list of dict {name, value, checksum}
         """
         #Get the begin of the frame, marked by \x02
