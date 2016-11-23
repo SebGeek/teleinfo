@@ -28,13 +28,17 @@ delimiter_def = ";"
 # Use mouse middle button for a second cursor to show difference
 
 # - cas où la premiere colonne n'est pas une date
-# - curseur sur tous les graphs
 # - prise en compte de la premiere ligne pour poser label des axes Y
 # - unité suivant ligne de titre entre parentheses
+# - curseur sur tous les graphs
+# - espace (petit) entre les subplots
 # - annotation: appui sur touche 'a' puis ajoute une colonne dans le CSV
+
+# - visualizer: premiere ligne avec titre/unites
 
 # Fonctions:
 # compatible Linux/Windows
+
 
 class Application(Frame):
     def __init__(self, root, title):
