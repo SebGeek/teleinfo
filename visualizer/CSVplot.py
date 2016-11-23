@@ -26,6 +26,9 @@ request_file = True
 #request_file = "Z:/teleinfo/log/log.csv.2016-11-19"
 
 # TODO:
+# texte des labels en plus petit
+# trop d'espace vide sous le graph du bas
+# menu qui indique les colonnes affichées, que l'on peut cacher
 # - curseur sur tous les graphs
 # - annotation: appui sur touche 'a' puis ajoute une colonne dans le CSV
 
