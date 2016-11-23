@@ -28,17 +28,15 @@ request_file = "../log/After_Simulation_TU4_CRS1.csv"
 # Use key 'c' to activate cursor
 # Use mouse middle button for a second cursor to show difference
 
-# - cas où la premiere colonne n'est pas une date
-# - prise en compte de la premiere ligne pour poser label des axes Y
-# - unité suivant ligne de titre entre parentheses
 # - curseur sur tous les graphs
-# - espace (petit) entre les subplots
 # - annotation: appui sur touche 'a' puis ajoute une colonne dans le CSV
 
 # - visualizer: premiere ligne avec titre/unites
 
 # Fonctions:
 # compatible Linux/Windows
+# gère première colonne en format date si respecte "%Y-%m-%d %H:%M:%S.%f"
+
 
 
 class Application(Frame):
@@ -124,8 +122,9 @@ class Application(Frame):
         if self.first_time == True:
             # Detect the number of columns (reading first line)
             csvfile.seek(0)
-            first_line = csvfile.readline()
-            self.nb_col = first_line.count(delimiter_def)
+            first_line = csvfile.readline().replace("\n", "")
+            list_titles = first_line.split(delimiter_def)
+            self.nb_col = len(list_titles)
 
             # Detect the type of value in first column (reading second line)
             second_line = csvfile.readline().split(delimiter_def)
@@ -137,7 +136,7 @@ class Application(Frame):
                 self.x_value_type = "date"
 
             subplot = []
-            for i in range(self.nb_col):
+            for i in range(self.nb_col-1):
                 # "2, 3, 4" means "2x3 grid, 4th subplot1".
                 subplot.append(self.fig.add_subplot(self.nb_col, 1, i+1))
 
@@ -147,11 +146,16 @@ class Application(Frame):
                     subplot[i].xaxis.set_major_locator(mdates.HourLocator())
                     subplot[i].xaxis.set_major_formatter(format_ticks)
 
-            # Labels
-            plt.xlabel("Temps (h)")
-            plt.ylabel("Puissance (W)")
+                val = list_titles[i + 1].decode("utf-8").encode("ascii", "replace")
+                subplot[i].set_ylabel(val)
 
-            plt.subplots_adjust(left=0.06, right=0.99, bottom=0.08, top=0.93, hspace=.001)
+            # Labels
+            if self.x_value_type == "date":
+                plt.xlabel("Time (h)")
+            else:
+                plt.xlabel(list_titles[0])
+
+            plt.subplots_adjust(left=0.08, right=0.99, bottom=0.08, top=0.93, hspace=.15)
 
         x_values = []
         csvfile.seek(0)
@@ -176,7 +180,7 @@ class Application(Frame):
 
                 x_values.append(x_value)
 
-        for i in range(self.nb_col):
+        for i in range(self.nb_col-1):
             y_values = []
             first_y_value = True
 
