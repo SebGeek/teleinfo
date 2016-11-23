@@ -27,13 +27,12 @@ last_frame_read = {"HCHC": 0, "HCHP": 0, "PTEC": "xx", "PAPP": 0}
 
 
 class Teleinfo(threading.Thread):
-    """ Fetch teleinformation datas
+    """ Fetch teleinformation data from serial link
     """
 
     def __init__(self, device, logger, list_of_tags_to_read_values):
         """
         @param device : teleinfo modem device path
-        @param logfile : log file instance
         """
         self._device = device
         self.logger  = logger
@@ -47,7 +46,8 @@ class Teleinfo(threading.Thread):
         threading.Thread.__init__(self)
 
     def open(self):
-        """ open teleinfo modem device
+        """
+        open teleinfo modem device
         """
         self._ser = None
         try:
@@ -55,7 +55,7 @@ class Teleinfo(threading.Thread):
             self._ser = serial.Serial(self._device, 1200, bytesize=7, parity='E', stopbits=1)
             self.logger.info("Teleinfo modem successfully opened")
         except:
-            self.logger.error("Error opening Teleinfo modem '%s' : %s" % (self._device, traceback.format_exc()) )
+            self.logger.error("Error opening Teleinfo modem '%s' : %s" % (self._device, traceback.format_exc()))
             self.terminate()
 
     def close(self):
@@ -115,13 +115,13 @@ class Teleinfo(threading.Thread):
                 resp = self._ser.readline()
 
             #\x03 has been detected, that's the last line of the frame
-            if len(resp.replace('\r','').replace('\n','').split()) == 2:
+            if len(resp.replace('\r', '').replace('\n', '').split()) == 2:
                 #print "* End frame"
                 #The checksum char is ' '
-                name, value = resp.replace('\r','').replace('\n','').replace('\x02','').replace('\x03','').split()
+                resp.replace('\r', '').replace('\n', '').replace('\x02', '').replace('\x03', '').split()
                 checksum = ' '
             else:
-                name, value, checksum = resp.replace('\r','').replace('\n','').replace('\x02','').replace('\x03','').split()
+                name, value, checksum = resp.replace('\r', '').replace('\n', '').replace('\x02', '').replace('\x03', '').split()
 
             if self._is_valid(resp, checksum):
                 # MOTDETAT : Mot d’état (autocontrôle)
@@ -133,7 +133,8 @@ class Teleinfo(threading.Thread):
 
         return frameCsv
 
-    def _is_valid(self, frame, checksum):
+    @staticmethod
+    def _is_valid(frame, checksum):
         """ Check if a frame is valid
         @param frame : the full frame
         @param checksum : the frame checksum
@@ -142,8 +143,8 @@ class Teleinfo(threading.Thread):
         datas = ' '.join(frame.split()[0:2])
         my_sum = 0
         for cks in datas:
-            my_sum = my_sum + ord(cks)
-        computed_checksum = ( my_sum & int("111111", 2) ) + 0x20
+            my_sum += ord(cks)
+        computed_checksum = (my_sum & int("111111", 2)) + 0x20
         #print "computed_checksum = %s" % chr(computed_checksum)
         return chr(computed_checksum) == checksum
 
@@ -157,94 +158,28 @@ class Teleinfo(threading.Thread):
 
         self.IsTerminated = True
 
-def func_logger(filename):
-    logger = logging.getLogger('teleinfo_status')
-    logger.setLevel(logging.DEBUG)
-    # create file handler which logs even debug messages
-    fh = logging.FileHandler(filename)
-    fh.setLevel(logging.DEBUG)
 
-    # create console handler and set level to debug
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
+# Override doRollover in order to write a header at the top of every file
+class MyTimedRotatingFileHandler(logging.handlers.TimedRotatingFileHandler):
 
-    # create formatter
-    formatter = logging.Formatter('%(asctime)s:%(levelname)s:%(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-    fh.setFormatter(formatter)
-    ch.setFormatter(formatter)
+    def __init__(self, logfile, when='h', interval=1):
+        super(MyTimedRotatingFileHandler, self).__init__(logfile, when, interval)
+        self._header = ""
+        self._log = None
 
-    # add to logps auxger
-    logger.addHandler(fh)
-    logger.addHandler(ch)
+    def doRollover(self):
+        super(MyTimedRotatingFileHandler, self).doRollover()
 
-    return logger
+        if self._log is not None and self._header != "":
+            self._log.info(self._header)
 
-def func_store_val(filename):
-    store_val = logging.getLogger('teleinfo_values')
-    store_val.setLevel(logging.DEBUG)
-    # create file handler which logs teleinfo values
-    # Files are cut every day at midnight
-    fh = logging.handlers.TimedRotatingFileHandler(filename, when='midnight')
+    def setHeader(self, header):
+        self._header = header
 
-    fh.setLevel(logging.DEBUG)
-    # create formatter
-    formatter = logging.Formatter('%(message)s')
-    fh.setFormatter(formatter)
+    def configureHeaderWriter(self, header, log):
+        self._header = header
+        self._log = log
 
-    # add to logger
-    store_val.propagate = False # do not send to console stdout
-    store_val.addHandler(fh)
-
-    return store_val
-
-
-#------------------------------------------------------------------------------
-# MAIN
-#------------------------------------------------------------------------------
-
-def main():
-    starttime = time.time()
-    endtime   = starttime + duration
-    previoustime = starttime
-    first_time = True
-
-    # Header
-    store_val.info("Date/Heure;" +
-                   "Prix (€ TTC);" +
-                   "Puissance apparente en V.A;" +
-                   "Période tarifaire (HC=0, HP=1)")
-
-    while time.time() <= endtime:
-        if time.time() >= (previoustime + period):
-            date = datetime.datetime.now()
-
-            index_HC_current = int(last_frame_read["HCHC"])
-            index_HP_current = int(last_frame_read["HCHP"])
-            if first_time == True:
-                index_HC_offset = index_HC_current
-                index_HP_offset = index_HP_current
-                prix = 0
-                first_time = False
-            else:
-                index_HC    = index_HC_current - index_HC_offset
-                index_HP    = index_HP_current - index_HP_offset
-                prix        = (index_HC / 1000. * prix_HC) + (index_HP / 1000. * prix_HP)
-
-            if last_frame_read["PTEC"][0:2] == 'HC':
-                periode_tarifaire = 0
-            else:
-                periode_tarifaire = 1
-
-            puissance_apparente = int(last_frame_read["PAPP"])
-
-            store_val.info(str(date)                + ";" +
-                           str(prix)                + ";" +
-                           str(puissance_apparente) + ";" +
-                           str(periode_tarifaire))
-
-            previoustime += period
-
-        time.sleep(0.1)
 
 if __name__ == "__main__":
     '''
@@ -274,26 +209,102 @@ if __name__ == "__main__":
     colonne 3: HC=0, HP=1
     '''
 
+    ####################################
     # read arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument("-o", "--output", required=True, help="append Teleinfo values in OUTPUT file; e.g. ./log/log.csv")
+    parser.add_argument("-o", "--output", required=True, help="append values in OUTPUT file; e.g. ./log/log.csv")
     args = parser.parse_args()
 
+    ####################################
     # Create status log (for info or errors)
     # store in file and display to console
-    logger = func_logger("status.log")
+    log_file = logging.getLogger('teleinfo_status')
+    log_file.setLevel(logging.DEBUG)
+    # create file handler which logs even debug messages
+    fh_log_file = logging.FileHandler("status.log")
+    fh_log_file.setLevel(logging.DEBUG)
 
-    # Create results log
+    # create console handler and set level to debug
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+
+    # create formatter
+    formatter = logging.Formatter('%(asctime)s:%(levelname)s:%(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+    fh_log_file.setFormatter(formatter)
+    ch.setFormatter(formatter)
+
+    # add to log
+    log_file.addHandler(fh_log_file)
+    log_file.addHandler(ch)
+
+    log_file.info("Teleinfo values will append in %s file", args.output)
+
+    ####################################
+    # Create CSV log
     # store in file but do not display in console
-    store_val = func_store_val(args.output)
-    logger.info("Teleinfo values will append in %s file", args.output)
+    line_val = logging.getLogger('teleinfo_values')
+    line_val.setLevel(logging.DEBUG)
+    # create file handler which logs teleinfo values
+    # Files are cut every day at midnight
+    fh_csv = MyTimedRotatingFileHandler(args.output, when='midnight')
 
-    thread_teleinfo = Teleinfo(gDeviceName, logger, ("HCHC", "HCHP", "PTEC", "IINST", "PAPP"))
+    fh_csv.setLevel(logging.DEBUG)
+    # create formatter
+    formatter = logging.Formatter('%(message)s')
+    fh_csv.setFormatter(formatter)
+
+    line_val.propagate = False  # do not send to console stdout
+    line_val.addHandler(fh_csv)
+
+    ####################################
+    # Start thread to read on serial link
+    thread_teleinfo = Teleinfo(gDeviceName, log_file, ("HCHC", "HCHP", "PTEC", "IINST", "PAPP"))
     thread_teleinfo.start()
 
+    ####################################
+    # Fill CSV log using last_frame_read coming from the thread
     try:
-        main()
+        starttime = time.time()
+        endtime = starttime + duration
+        previoustime = starttime
+        first_time = True
+        index_HC_offset = 0.0
+        index_HP_offset = 0.0
+
+        # Header
+        header_line = "Date/Heure;Prix (euros TTC);Puissance apparente (V.A);Periode tarifaire (HC=0, HP=1)"
+        line_val.info(header_line)
+        fh_csv.configureHeaderWriter(header_line, line_val)
+
+        while time.time() <= endtime:
+            if time.time() >= (previoustime + period):
+                date = datetime.datetime.now()
+
+                index_HC_current = int(last_frame_read["HCHC"])
+                index_HP_current = int(last_frame_read["HCHP"])
+                if first_time == True:
+                    index_HC_offset = index_HC_current
+                    index_HP_offset = index_HP_current
+                    prix = 0
+                    first_time = False
+                else:
+                    index_HC = index_HC_current - index_HC_offset
+                    index_HP = index_HP_current - index_HP_offset
+                    prix = (index_HC / 1000. * prix_HC) + (index_HP / 1000. * prix_HP)
+
+                if last_frame_read["PTEC"][0:2] == 'HC':
+                    periode_tarifaire = 0
+                else:
+                    periode_tarifaire = 1
+
+                puissance_apparente = int(last_frame_read["PAPP"])
+
+                line_val.info(str(date) + ";" + str(prix) + ";" + str(puissance_apparente) + ";" + str(periode_tarifaire))
+
+                previoustime += period
+
+            time.sleep(0.1)
 
     except (KeyboardInterrupt, SystemExit):
         thread_teleinfo.close()
-        logger.info("Keyboard interrupt: end of prog")
+        log_file.info("Keyboard interrupt: end of prog")
