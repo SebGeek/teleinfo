@@ -9,10 +9,12 @@ matplotlib.use('TkAgg')
 
 class Cursor(object):
 
-    def __init__(self, axes, canvas):
-        self.axes_list = axes
-        self.axes = axes[0]
+    def __init__(self, axes_list, canvas, x_value_type):
+        self.axes_list = axes_list
         self.canvas = canvas
+        self.x_value_type = x_value_type
+
+        self.axes = self.axes_list[0]
         hold = self.axes.ishold()
         self.axes.hold(True)
 
@@ -46,23 +48,28 @@ class Cursor(object):
         self.crossx.set_data((minx, maxx), (y, y))
         self.crossy.set_data((x, x), (miny, maxy))
 
-        x_datetime = matplotlib.dates.num2date(x, tz=None)
+        if self.x_value_type == "date":
+            x_convert = matplotlib.dates.num2date(x, tz=None)
+        else:
+            x_convert = x
+
         if not self.RefCursorOn:
             # absolute position
-            x_datetime_print = str(x_datetime)
+            x_print = str(x_convert)
             y_print = "%.2f" % y
         else:
             # differential measure (comparison to ref)
-            x_datetime_print = str(x_datetime - self.ref_x_datetime)
+            x_print = str(x_convert - self.ref_x_convert)
             y_print = "%.2f" % (y - self.ref_y)
 
-        if "day" not in x_datetime_print:
-            x_datetime_print = x_datetime_print[x_datetime_print.find(" ")+1:]
-        x_datetime_print = x_datetime_print[:x_datetime_print.find(".")]
+        if self.x_value_type == "date":
+            if "day" not in x_print:
+                x_print = x_print[x_print.find(" ")+1:]
+            x_print = x_print[:x_print.find(".")]
 
         if self.annotation != None:
             self.annotation.remove()
-        self.annotation = self.axes.annotate(x_datetime_print + "\n" + y_print, xy=(x, y),
+        self.annotation = self.axes.annotate(x_print + "\n" + y_print, xy=(x, y),
                                              xytext=(5, 5), textcoords='offset pixels', fontsize=9)
         self.canvas.draw()
 
@@ -82,7 +89,11 @@ class Cursor(object):
         miny, maxy = ax.get_ylim()
         self.ref_crossx.set_data((minx, maxx), (y, y))
         self.ref_crossy.set_data((x, x), (miny, maxy))
-        self.ref_x_datetime = matplotlib.dates.num2date(x, tz=None)
+
+        if self.x_value_type == "date":
+            self.ref_x_convert = matplotlib.dates.num2date(x, tz=None)
+        else:
+            self.ref_x_convert = x
         self.ref_y = y
 
         self.canvas.draw()

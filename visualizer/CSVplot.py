@@ -20,9 +20,10 @@ from cursor import Cursor
 matplotlib.use('TkAgg')
 
 window_zoomed = True
-request_file = True
+# request_file = True
+request_file = "../log/After_Simulation_TU4_CRS1.csv"
+#request_file = "../log/log.csv.2016-11-19"
 #request_file = "Z:/teleinfo/log/log.csv.2016-11-19"
-delimiter_def = ";"
 
 # Use key 'c' to activate cursor
 # Use mouse middle button for a second cursor to show difference
@@ -61,7 +62,7 @@ class Application(Frame):
 
         # Main window
         self.first_time = True
-        self.first_date = True
+        self.first_x_value = True
         self.CursorOn = False
 
         self.__create_widgets()
@@ -109,23 +110,42 @@ class Application(Frame):
             filename = tkFileDialog.askopenfilename(initialdir=inspect.currentframe())
         else:
             filename = request_file
+
+        # Detect delimiter
         csvfile = open(filename, 'rb')
-        reader = csv.reader(csvfile, delimiter=delimiter_def)
+        first_line = csvfile.readline()
+        if ";" in first_line:
+            delimiter_def = ";"
+        elif "," in first_line:
+            delimiter_def = ","
+        else:
+            raise "unknown delimiter"
 
         if self.first_time == True:
-            # Read the number of columns
+            # Detect the number of columns (reading first line)
+            csvfile.seek(0)
             first_line = csvfile.readline()
             self.nb_col = first_line.count(delimiter_def)
+
+            # Detect the type of value in first column (reading second line)
+            second_line = csvfile.readline().split(delimiter_def)
+            try:
+                datetime.datetime.strptime(second_line[0], "%Y-%m-%d %H:%M:%S.%f")
+            except:
+                self.x_value_type = "float"
+            else:
+                self.x_value_type = "date"
 
             subplot = []
             for i in range(self.nb_col):
                 # "2, 3, 4" means "2x3 grid, 4th subplot1".
                 subplot.append(self.fig.add_subplot(self.nb_col, 1, i+1))
 
-                # format the ticks
-                format_ticks = mdates.DateFormatter('%H')
-                subplot[i].xaxis.set_major_locator(mdates.HourLocator())
-                subplot[i].xaxis.set_major_formatter(format_ticks)
+                # format the x ticks
+                if self.x_value_type == "date":
+                    format_ticks = mdates.DateFormatter('%H')
+                    subplot[i].xaxis.set_major_locator(mdates.HourLocator())
+                    subplot[i].xaxis.set_major_formatter(format_ticks)
 
             # Labels
             plt.xlabel("Temps (h)")
@@ -136,16 +156,25 @@ class Application(Frame):
         x_values = []
         csvfile.seek(0)
         first_line = True
+        reader = csv.reader(csvfile, delimiter=delimiter_def)
         for row in reader:
             if first_line == True:
                 # Evite la première ligne qui peut être une ligne de titre
                 first_line = False
             else:
-                x_date = datetime.datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S.%f")
-                if self.first_date == True:
-                    self.first_date = x_date
-                x_date = x_date.replace(year=self.first_date.year, month=self.first_date.month, day=self.first_date.day)
-                x_values.append(x_date)
+                if self.x_value_type == "date":
+                    x_value = datetime.datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S.%f")
+                else:
+                    x_value = float(row[0].replace(",", "."))
+
+                if self.first_x_value == True:
+                    self.first_x_value = x_value
+                if self.x_value_type == "float":
+                    x_value -= self.first_x_value
+                else:
+                    x_value = x_value.replace(year=self.first_x_value.year, month=self.first_x_value.month, day=self.first_x_value.day)
+
+                x_values.append(x_value)
 
         for i in range(self.nb_col):
             y_values = []
@@ -169,7 +198,7 @@ class Application(Frame):
             subplot[i].legend(loc='best', prop={'size': 8})
             subplot[i].grid(True)
 
-        self.cursor = Cursor(subplot, self.canvas)
+        self.cursor = Cursor(subplot, self.canvas, self.x_value_type)
         self.fig.canvas.mpl_connect('key_press_event', self.__key)
 
         self.canvas.draw()
