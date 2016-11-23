@@ -74,20 +74,18 @@ class Application(Frame):
         print msg
 
     def __key(self, event):
-        if (str(event.key).endswith("c") and self.CursorOn) or str(event.key).endswith("escape"):
-            # cursors OFF
-            self.fig.canvas.mpl_disconnect(self.binding_id_move)
-            self.fig.canvas.mpl_disconnect(self.binding_id_click)
-            self.cursor.clear_cursors()
-            self.CursorOn = False
-            return
-
-        if str(event.key).endswith("c") and not self.CursorOn:
-            # cursors ON
-            self.binding_id_move = self.fig.canvas.mpl_connect('motion_notify_event', self.cursor.mouse_move)
-            self.binding_id_click = self.fig.canvas.mpl_connect('button_press_event', self.cursor.mouse_click)
-            self.CursorOn = True
-            return
+        if str(event.key).endswith("c"):
+            if self.CursorOn:
+                # cursors OFF
+                self.fig.canvas.mpl_disconnect(self.binding_id_move)
+                self.fig.canvas.mpl_disconnect(self.binding_id_click)
+                self.cursor.clear_cursors()
+                self.CursorOn = False
+            else:
+                # cursors ON
+                self.binding_id_move = self.fig.canvas.mpl_connect('motion_notify_event', self.cursor.mouse_move)
+                self.binding_id_click = self.fig.canvas.mpl_connect('button_press_event', self.cursor.mouse_click)
+                self.CursorOn = True
 
     def __create_widgets(self):
         # Define a weight for automatic resize of components
