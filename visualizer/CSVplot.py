@@ -26,8 +26,7 @@ request_file = True
 #request_file = "Z:/teleinfo/log/log.csv.2016-11-19"
 
 # TODO:
-# texte des labels en plus petit
-# trop d'espace vide sous le graph du bas
+# texte des chiffres des axes en plus petit
 # menu qui indique les colonnes affichées, que l'on peut cacher
 # - curseur sur tous les graphs
 # - annotation: appui sur touche 'a' puis ajoute une colonne dans le CSV
@@ -120,6 +119,10 @@ class Application(Frame):
             raise "unknown delimiter"
 
         if self.first_time == True:
+            # We change the fontsize of minor ticks label
+            plt.tick_params(axis='both', which='major', labelsize=8)
+            plt.tick_params(axis='both', which='minor', labelsize=8)
+
             # Detect the number of columns (reading first line)
             csvfile.seek(0)
             first_line = csvfile.readline().replace("\n", "")
@@ -127,7 +130,7 @@ class Application(Frame):
             last_column_empty = 0
             if list_titles[-1].strip() == "":
                 last_column_empty = 1
-            self.nb_col = len(list_titles) - last_column_empty
+            self.nb_col = len(list_titles) - last_column_empty - 1 # do not count the first column (x axis)
 
             # Detect the type of value in first column (reading second line)
             second_line = csvfile.readline().split(delimiter_def)
@@ -139,8 +142,8 @@ class Application(Frame):
                 self.x_value_type = "date"
 
             subplot = []
-            for i in range(self.nb_col - 1):
-                # "2, 3, 4" means "2x3 grid, 4th subplot1".
+            for i in range(self.nb_col):
+                # (nb_columns, nb_lines, position)
                 subplot.append(self.fig.add_subplot(self.nb_col, 1, i+1))
 
                 # format the x ticks
@@ -150,10 +153,10 @@ class Application(Frame):
                     subplot[i].xaxis.set_major_formatter(format_ticks)
 
                 val = list_titles[i + 1].decode("utf-8").encode("ascii", "replace")
-                subplot[i].set_ylabel(val)
+                subplot[i].set_ylabel(val, fontsize='small')
 
             # Labels
-            plt.xlabel(list_titles[0])
+            plt.xlabel(list_titles[0], fontsize='small')
 
             plt.subplots_adjust(left=0.08, right=0.99, bottom=0.08, top=0.93, hspace=.15)
 
@@ -167,7 +170,10 @@ class Application(Frame):
                 first_line = False
             else:
                 if self.x_value_type == "date":
-                    x_value = datetime.datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S.%f")
+                    try:
+                        x_value = datetime.datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S.%f")
+                    except:
+                        self.display("error, not a date value (%Y-%m-%d %H:%M:%S.%f): " + row[0])
                 else:
                     x_value = float(row[0].replace(",", "."))
 
@@ -179,7 +185,7 @@ class Application(Frame):
 
                 x_values.append(x_value)
 
-        for i in range(self.nb_col-1):
+        for i in range(self.nb_col):
             y_values = []
             first_y_value = True
 
@@ -229,8 +235,11 @@ class Application(Frame):
 if __name__ == '__main__':
     root_window = Tk()
     if window_zoomed == True:
-        w, h = root_window.winfo_screenwidth(), root_window.winfo_screenheight()
-        root_window.geometry("%dx%d+0+0" % (w, h))
+        if os.name == "posix":
+            w, h = root_window.winfo_screenwidth(), root_window.winfo_screenheight()
+            root_window.geometry("%dx%d+0+0" % (w, h))
+        else:
+            root_window.state('zoomed')
     else:
         root_window.geometry("800x600")
 
