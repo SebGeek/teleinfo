@@ -25,8 +25,6 @@ request_file = True
 #request_file = "../log/log.csv.2016-11-19"
 #request_file = "Z:/teleinfo/log/log.csv.2016-11-19"
 
-# TODO:
-# texte des chiffres des axes en plus petit
 # menu qui indique les colonnes affichées, que l'on peut cacher
 # - curseur sur tous les graphs
 # - annotation: appui sur touche 'a' puis ajoute une colonne dans le CSV
@@ -116,16 +114,13 @@ class Application(Frame):
         elif "," in first_line:
             delimiter_def = ","
         else:
-            raise "unknown delimiter"
+            delimiter_def = ""
+            print "Unknown delimiter (must be ; or ,)"
 
         if self.first_time == True:
-            # We change the fontsize of minor ticks label
-            plt.tick_params(axis='both', which='major', labelsize=8)
-            plt.tick_params(axis='both', which='minor', labelsize=8)
-
             # Detect the number of columns (reading first line)
             csvfile.seek(0)
-            first_line = csvfile.readline().replace("\n", "")
+            first_line = csvfile.readline().replace("\n", "").replace("\r", "")
             list_titles = first_line.split(delimiter_def)
             last_column_empty = 0
             if list_titles[-1].strip() == "":
@@ -187,7 +182,7 @@ class Application(Frame):
 
         for i in range(self.nb_col):
             y_values = []
-            first_y_value = True
+            #first_y_value = True
 
             csvfile.seek(0)
             first_line = True
@@ -200,15 +195,24 @@ class Application(Frame):
                         y_value = float(row[i+1].replace(",", "."))
                     except:
                         self.display("error, not a float value: " + row[i+1])
-                    if first_y_value == True:
-                        first_y_value = y_value
-                    #y_value -= first_y_value
-                    y_values.append(y_value)
+                    else:
+                        #if first_y_value == True:
+                        #    first_y_value = y_value
+                        #y_value -= first_y_value
+                        y_values.append(y_value)
             subplot[i].plot(x_values, y_values, label=filename)
 
             # Put a legend to the right of the current axis. Set font size
             subplot[i].legend(loc='best', prop={'size': 8})
             subplot[i].grid(True)
+            for tick in subplot[i].xaxis.get_major_ticks():
+                tick.label.set_fontsize(8)
+            for tick in subplot[i].xaxis.get_minor_ticks():
+                tick.label.set_fontsize(8)
+            for tick in subplot[i].yaxis.get_major_ticks():
+                tick.label.set_fontsize(8)
+            for tick in subplot[i].yaxis.get_minor_ticks():
+                tick.label.set_fontsize(8)
 
         self.cursor = Cursor(subplot, self.canvas, self.x_value_type)
         self.fig.canvas.mpl_connect('key_press_event', self.__key)
