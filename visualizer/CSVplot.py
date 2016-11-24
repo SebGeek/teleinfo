@@ -25,7 +25,8 @@ request_file = True
 #request_file = "../log/log.csv.2016-11-19"
 #request_file = "Z:/teleinfo/log/log.csv.2016-11-19"
 
-# menu qui indique les colonnes affichées, que l'on peut cacher
+
+# - menu qui indique les colonnes affichées, que l'on peut cacher
 # - curseur sur tous les graphs
 # - annotation: appui sur touche 'a' puis ajoute une colonne dans le CSV
 
@@ -51,6 +52,9 @@ class Application(Frame):
         menu1.add_command(label="Charger CSV", command=self.load_CSV)
         menu1.add_command(label="Quitter", command=self.do_quit)
 
+        self.plot_menu = Menu(menu, tearoff=False)
+        menu.add_cascade(label="Plot", menu=self.plot_menu)
+
         help_menu = Menu(menu, tearoff=False)
         menu.add_cascade(label="Help", menu=help_menu)
         help_menu.add_command(label="About...", command=self.about_command)
@@ -61,9 +65,6 @@ class Application(Frame):
         self.CursorOn = False
 
         self.__create_widgets()
-
-        # Update window graphics
-        self.update()
 
     @staticmethod
     def display(msg):
@@ -115,10 +116,10 @@ class Application(Frame):
             delimiter_def = ","
         else:
             delimiter_def = ""
-            print "Unknown delimiter (must be ; or ,)"
+            print "Unknown delimiter: must be ; or ,"
 
         if self.first_time == True:
-            # Detect the number of columns (reading first line)
+            # Detect the number of columns (reading first line) and read the titles
             csvfile.seek(0)
             first_line = csvfile.readline().replace("\n", "").replace("\r", "")
             list_titles = first_line.split(delimiter_def)
@@ -150,11 +151,14 @@ class Application(Frame):
                 val = list_titles[i + 1].decode("utf-8").encode("ascii", "replace")
                 subplot[i].set_ylabel(val, fontsize='small')
 
+                self.plot_menu.add_command(label=val, command=self.about_command)
+
             # Labels
             plt.xlabel(list_titles[0], fontsize='small')
 
             plt.subplots_adjust(left=0.08, right=0.99, bottom=0.08, top=0.93, hspace=.15)
 
+        # Read X values
         x_values = []
         csvfile.seek(0)
         first_line = True
@@ -180,15 +184,14 @@ class Application(Frame):
 
                 x_values.append(x_value)
 
+        # Read Y values and plot
         for i in range(self.nb_col):
             y_values = []
-            #first_y_value = True
-
             csvfile.seek(0)
             first_line = True
             for row in reader:
                 if first_line == True:
-                    # Evite la première ligne qui peut être une ligne de titre
+                    # Avoid first line which can be a title
                     first_line = False
                 else:
                     try:
@@ -196,11 +199,8 @@ class Application(Frame):
                     except:
                         self.display("error, not a float value: " + row[i+1])
                     else:
-                        #if first_y_value == True:
-                        #    first_y_value = y_value
-                        #y_value -= first_y_value
                         y_values.append(y_value)
-            subplot[i].plot(x_values, y_values, label=filename)
+            subplot[i].plot(x_values, y_values, label=os.path.basename(filename))
 
             # Put a legend to the right of the current axis. Set font size
             subplot[i].legend(loc='best', prop={'size': 8})
@@ -224,8 +224,6 @@ class Application(Frame):
         self.root.quit()
 
     def load_CSV(self):
-        self.display("load_CSV")
-
         self.plot_figure()
 
         # Update window graphics
