@@ -19,14 +19,15 @@ import matplotlib.dates as mdates
 from cursor import Cursor
 matplotlib.use('TkAgg')
 
-window_zoomed = True
+window_zoomed = False
 request_file = True
 #request_file = "../log/After_Simulation_TU4_CRS1.csv"
-#request_file = "../log/log.csv.2016-11-19"
+#request_file = "../log/log.csv.2016-11-23"
 #request_file = "Z:/teleinfo/log/log.csv.2016-11-19"
 
 
 # - menu qui indique les colonnes affichées, que l'on peut cacher
+
 # - curseur sur tous les graphs
 # - annotation: appui sur touche 'a' puis ajoute une colonne dans le CSV
 
@@ -60,17 +61,19 @@ class Application(Frame):
         help_menu.add_command(label="About...", command=self.about_command)
 
         # Main window
-        self.first_time = True
+        self.very_first_time = True
         self.first_x_value = True
         self.CursorOn = False
 
-        self.__create_widgets()
+        self.filename_list = []
+        self.y_axis_remove = []
+        self.load_CSV()
 
     @staticmethod
     def display(msg):
         print msg
 
-    def __key(self, event):
+    def key_press(self, event):
         if str(event.key).endswith("c"):
             if self.CursorOn:
                 # cursors OFF
@@ -84,12 +87,13 @@ class Application(Frame):
                 self.binding_id_click = self.fig.canvas.mpl_connect('button_press_event', self.cursor.mouse_click)
                 self.CursorOn = True
 
-    def __create_widgets(self):
+    def create_widgets(self):
         # Define a weight for automatic resize of components
         self.root.columnconfigure(0, weight=1)
         row_current = 0
 
         # Plot frame
+        plt.clf() # clear figure
         self.fig = plt.figure(figsize=(5, 4), dpi=100)
         self.root.rowconfigure(row_current, weight=1)
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.root)
@@ -99,135 +103,149 @@ class Application(Frame):
             toolbar = NavigationToolbar2TkAgg(self.canvas, self.root)
             toolbar.grid(row=row_current, column=0, sticky="nw")
 
-        self.plot_figure()
-
     def plot_figure(self):
-        if request_file == True:
-            filename = tkFileDialog.askopenfilename(initialdir=inspect.currentframe())
-        else:
-            filename = request_file
-
-        # Detect delimiter
-        csvfile = open(filename, 'rb')
-        first_line = csvfile.readline()
-        if ";" in first_line:
-            delimiter_def = ";"
-        elif "," in first_line:
-            delimiter_def = ","
-        else:
-            delimiter_def = ""
-            print "Unknown delimiter: must be ; or ,"
-
-        if self.first_time == True:
-            # Detect the number of columns (reading first line) and read the titles
-            csvfile.seek(0)
-            first_line = csvfile.readline().replace("\n", "").replace("\r", "")
-            list_titles = first_line.split(delimiter_def)
-            last_column_empty = 0
-            if list_titles[-1].strip() == "":
-                last_column_empty = 1
-            self.nb_col = len(list_titles) - last_column_empty - 1 # do not count the first column (x axis)
-
-            # Detect the type of value in first column (reading second line)
-            second_line = csvfile.readline().split(delimiter_def)
-            try:
-                datetime.datetime.strptime(second_line[0], "%Y-%m-%d %H:%M:%S.%f")
-            except:
-                self.x_value_type = "float"
+        print "self.filename_list", self.filename_list
+        print "self.y_axis_remove", self.y_axis_remove
+        first_time = True
+        for filename in self.filename_list:
+            # Detect delimiter
+            csvfile = open(filename, 'rb')
+            first_line = csvfile.readline()
+            if ";" in first_line:
+                delimiter_def = ";"
+            elif "," in first_line:
+                delimiter_def = ","
             else:
-                self.x_value_type = "date"
+                delimiter_def = ""
+                print "Unknown delimiter: must be ; or ,"
 
-            subplot = []
-            for i in range(self.nb_col):
-                # (nb_columns, nb_lines, position)
-                subplot.append(self.fig.add_subplot(self.nb_col, 1, i+1))
+            if first_time == True:
+                first_time = False
 
-                # format the x ticks
-                if self.x_value_type == "date":
-                    format_ticks = mdates.DateFormatter('%H')
-                    subplot[i].xaxis.set_major_locator(mdates.HourLocator())
-                    subplot[i].xaxis.set_major_formatter(format_ticks)
+                # Detect the number of columns (reading first line) and read the titles
+                csvfile.seek(0)
+                first_line = csvfile.readline().replace("\n", "").replace("\r", "")
+                list_titles = first_line.split(delimiter_def)
+                last_column_empty = 0
+                if list_titles[-1].strip() == "":
+                    last_column_empty = 1
+                self.nb_col = len(list_titles) - last_column_empty - 1 # do not count the first column (x axis)
 
-                val = list_titles[i + 1].decode("utf-8").encode("ascii", "replace")
-                subplot[i].set_ylabel(val, fontsize='small')
-
-                self.plot_menu.add_command(label=val, command=self.about_command)
-
-            # Labels
-            plt.xlabel(list_titles[0], fontsize='small')
-
-            plt.subplots_adjust(left=0.08, right=0.99, bottom=0.08, top=0.93, hspace=.15)
-
-        # Read X values
-        x_values = []
-        csvfile.seek(0)
-        first_line = True
-        reader = csv.reader(csvfile, delimiter=delimiter_def)
-        for row in reader:
-            if first_line == True:
-                # Evite la première ligne qui peut être une ligne de titre
-                first_line = False
-            else:
-                if self.x_value_type == "date":
-                    try:
-                        x_value = datetime.datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S.%f")
-                    except:
-                        self.display("error, not a date value (%Y-%m-%d %H:%M:%S.%f): " + row[0])
+                # Detect the type of value in first column (reading second line)
+                second_line = csvfile.readline().split(delimiter_def)
+                try:
+                    datetime.datetime.strptime(second_line[0], "%Y-%m-%d %H:%M:%S.%f")
+                except:
+                    self.x_value_type = "float"
                 else:
-                    x_value = float(row[0].replace(",", "."))
+                    self.x_value_type = "date"
 
-                if self.first_x_value == True:
-                    self.first_x_value = x_value
-                if self.x_value_type == "date":
-                    # Remove year/month/day information to display on 24h
-                    x_value = x_value.replace(year=self.first_x_value.year, month=self.first_x_value.month, day=self.first_x_value.day)
+                self.subplot = []
+                for i in range(self.nb_col):
+                    # (nb_columns, nb_lines, position)
+                    self.subplot.append(self.fig.add_subplot(self.nb_col, 1, i+1))
 
-                x_values.append(x_value)
+                    # format the x ticks
+                    if self.x_value_type == "date":
+                        format_ticks = mdates.DateFormatter('%H')
+                        self.subplot[i].xaxis.set_major_locator(mdates.HourLocator())
+                        self.subplot[i].xaxis.set_major_formatter(format_ticks)
 
-        # Read Y values and plot
-        for i in range(self.nb_col):
-            y_values = []
+                    val = list_titles[i + 1].decode("utf-8").encode("ascii", "replace")
+                    self.subplot[i].set_ylabel(val, fontsize='small')
+
+                    if self.very_first_time == True:
+                        self.plot_menu.add_checkbutton(label=val, command=lambda subplot_nb=i: self.show_subplot(subplot_nb))
+
+                # Labels
+                plt.xlabel(list_titles[0], fontsize='small')
+
+                plt.subplots_adjust(left=0.08, right=0.99, bottom=0.08, top=0.93, hspace=.15)
+
+            self.very_first_time = False
+
+            # Read X values
+            x_values = []
             csvfile.seek(0)
             first_line = True
+            reader = csv.reader(csvfile, delimiter=delimiter_def)
             for row in reader:
                 if first_line == True:
-                    # Avoid first line which can be a title
+                    # Evite la première ligne qui peut être une ligne de titre
                     first_line = False
                 else:
-                    try:
-                        y_value = float(row[i+1].replace(",", "."))
-                    except:
-                        self.display("error, not a float value: " + row[i+1])
+                    if self.x_value_type == "date":
+                        try:
+                            x_value = datetime.datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S.%f")
+                        except:
+                            self.display("error, not a date value (%Y-%m-%d %H:%M:%S.%f): " + row[0])
                     else:
-                        y_values.append(y_value)
-            subplot[i].plot(x_values, y_values, label=os.path.basename(filename))
+                        x_value = float(row[0].replace(",", "."))
 
-            # Put a legend to the right of the current axis. Set font size
-            subplot[i].legend(loc='best', prop={'size': 8})
-            subplot[i].grid(True)
-            for tick in subplot[i].xaxis.get_major_ticks():
-                tick.label.set_fontsize(8)
-            for tick in subplot[i].xaxis.get_minor_ticks():
-                tick.label.set_fontsize(8)
-            for tick in subplot[i].yaxis.get_major_ticks():
-                tick.label.set_fontsize(8)
-            for tick in subplot[i].yaxis.get_minor_ticks():
-                tick.label.set_fontsize(8)
+                    if self.first_x_value == True:
+                        self.first_x_value = x_value
+                    if self.x_value_type == "date":
+                        # Remove year/month/day information to display on 24h
+                        x_value = x_value.replace(year=self.first_x_value.year, month=self.first_x_value.month, day=self.first_x_value.day)
 
-        self.cursor = Cursor(subplot, self.canvas, self.x_value_type)
-        self.fig.canvas.mpl_connect('key_press_event', self.__key)
+                    x_values.append(x_value)
 
-        self.canvas.draw()
+            # Read Y values and plot
+            y_col_to_plot = range(self.nb_col)
+            for y_axis in self.y_axis_remove:
+                y_col_to_plot.remove(y_axis)
+            for i in y_col_to_plot:
+                y_values = []
+                csvfile.seek(0)
+                first_line = True
+                for row in reader:
+                    if first_line == True:
+                        # Avoid first line which can be a title
+                        first_line = False
+                    else:
+                        try:
+                            y_value = float(row[i+1].replace(",", "."))
+                        except:
+                            self.display("error, not a float value: " + row[i+1])
+                            y_values.append(0.0)
+                        else:
+                            y_values.append(y_value)
+                self.subplot[i].plot(x_values, y_values, label=os.path.basename(filename))
+
+                # Put a legend to the right of the current axis. Set font size
+                self.subplot[i].legend(loc='best', prop={'size': 8})
+                self.subplot[i].grid(True)
+                for tick in self.subplot[i].xaxis.get_major_ticks():
+                    tick.label.set_fontsize(8)
+                for tick in self.subplot[i].yaxis.get_major_ticks():
+                    tick.label.set_fontsize(8)
+
+            self.cursor = Cursor(self.subplot, self.canvas, self.x_value_type)
+            self.fig.canvas.mpl_connect('key_press_event', self.key_press)
+
+            # Update window graphics
+            self.canvas.draw()
+            self.update()
 
     def do_quit(self):
         plt.close('all')
         self.root.quit()
 
     def load_CSV(self):
+        if request_file == True:
+            filename = tkFileDialog.askopenfilename(initialdir=inspect.currentframe())
+        else:
+            filename = request_file
+        self.filename_list.append(filename)
+
+        self.create_widgets()
         self.plot_figure()
 
-        # Update window graphics
-        self.update()
+    def show_subplot(self, subplot_nb):
+        self.y_axis_remove.append(subplot_nb)
+
+        self.create_widgets()
+        self.plot_figure()
 
     @staticmethod
     def about_command():
