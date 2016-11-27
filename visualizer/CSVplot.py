@@ -28,6 +28,7 @@ request_file = "Z:/teleinfo/log/log.csv.2016-11-26"
 
 # - menu qui indique les colonnes affichées, que l'on peut cacher + filename à enlever
 # - choix d'avoir la premiere colonne des Y mise à 0
+#
 # - zoom sur un graph qui zoome les autres
 # - curseur sur tous les graphs, avec barre des Y qui est sur tous les graphs
 # - curseur qui apparait mal
@@ -53,9 +54,9 @@ class Application(Frame):
         self.root.config(menu=menu)
 
         menu1 = Menu(menu, tearoff=False)
-        menu.add_cascade(label="Fichier", menu=menu1)
-        menu1.add_command(label="Charger CSV", command=self.load_CSV)
-        menu1.add_command(label="Quitter", command=self.quit)
+        menu.add_cascade(label="File", menu=menu1)
+        menu1.add_command(label="Load CSV", command=self.load_CSV)
+        menu1.add_command(label="Quit", command=self.quit)
 
         self.plot_menu = Menu(menu, tearoff=False)
         menu.add_cascade(label="Plot", menu=self.plot_menu)
@@ -70,7 +71,7 @@ class Application(Frame):
         self.CursorOn = False
 
         self.filename_list = []
-        self.y_axis_remove = []
+        self.show_subplot_var = []
         self.load_CSV()
 
     @staticmethod
@@ -108,8 +109,6 @@ class Application(Frame):
             toolbar.grid(row=row_current, column=0, sticky="nw")
 
     def plot_figure(self):
-        print "self.filename_list", self.filename_list
-        print "self.y_axis_remove", self.y_axis_remove
         first_time = True
         for filename in self.filename_list:
             # Detect delimiter
@@ -135,6 +134,13 @@ class Application(Frame):
                     last_column_empty = 1
                 self.nb_col = len(list_titles) - last_column_empty - 1 # do not count the first column (x axis)
 
+                if self.very_first_time == True:
+                    self.y_col_to_plot = range(self.nb_col)
+                self.nb_col = len(self.y_col_to_plot)
+
+                print "self.filename_list", self.filename_list
+                print "self.y_col_to_plot", self.y_col_to_plot
+
                 # Detect the type of value in first column (reading second line)
                 second_line = csvfile.readline().split(delimiter_def)
                 try:
@@ -145,22 +151,24 @@ class Application(Frame):
                     self.x_value_type = "date"
 
                 self.subplot = []
-                for i in range(self.nb_col):
+                for subplot_idx, y_col in enumerate(self.y_col_to_plot):
                     # (nb_columns, nb_lines, position)
-                    self.subplot.append(self.fig.add_subplot(self.nb_col, 1, i+1))
+                    self.subplot.append(self.fig.add_subplot(self.nb_col, 1, subplot_idx+1))
 
                     # format the x ticks
                     if self.x_value_type == "date":
                         format_ticks = mdates.DateFormatter('%H')
-                        self.subplot[i].xaxis.set_major_locator(mdates.HourLocator())
-                        self.subplot[i].xaxis.set_major_formatter(format_ticks)
+                        self.subplot[subplot_idx].xaxis.set_major_locator(mdates.HourLocator())
+                        self.subplot[subplot_idx].xaxis.set_major_formatter(format_ticks)
 
-                    val = list_titles[i + 1].decode("utf-8").encode("ascii", "replace")
-                    self.subplot[i].set_ylabel(val, fontsize='small')
+                    val = list_titles[subplot_idx + 1].decode("utf-8").encode("ascii", "replace")
+                    self.subplot[subplot_idx].set_ylabel(val, fontsize='small')
 
                     if self.very_first_time == True:
-                        self.plot_menu.add_checkbutton(label=val, command=lambda subplot_nb=i: self.show_subplot(subplot_nb))
-
+                        self.show_subplot_var.append(IntVar())
+                        self.show_subplot_var[-1].set(1)
+                        self.plot_menu.add_checkbutton(label=val, variable=self.show_subplot_var[-1],
+                                                       command=lambda subplot_nb=subplot_idx: self.show_subplot(subplot_nb))
                 # Labels
                 plt.xlabel(list_titles[0], fontsize='small')
 
@@ -195,11 +203,8 @@ class Application(Frame):
                     x_values.append(x_value)
 
             # Read Y values and plot
-            y_col_to_plot = range(self.nb_col)
-            for y_axis in self.y_axis_remove:
-                y_col_to_plot.remove(y_axis)
             self.first_y_value = True
-            for y_col in y_col_to_plot:
+            for subplot_idx, y_col in enumerate(self.y_col_to_plot):
                 y_values = []
                 csvfile.seek(0)
                 first_line = True
@@ -209,33 +214,33 @@ class Application(Frame):
                         first_line = False
                     else:
                         try:
-                            y_value = float(row[y_col + 1].replace(",", "."))
+                            y_value = float(row[subplot_idx + 1].replace(",", "."))
                         except:
-                            self.display("error, not a float value: " + row[y_col + 1])
+                            self.display("error, not a float value: " + row[subplot_idx + 1])
                             y_values.append(0.0)
                         else:
-                            if y_col == 0:
+                            if subplot_idx == 0:
                                 # First y column has its values starting from origin
                                 if self.first_y_value == True:
                                     self.first_y_value = y_value
                                 y_value -= self.first_y_value
                             y_values.append(y_value)
-                self.subplot[y_col].plot(x_values, y_values, label=os.path.basename(filename))
+                self.subplot[subplot_idx].plot(x_values, y_values, label=os.path.basename(filename))
 
                 # Put a legend to the right of the current axis. Set font size
-                self.subplot[y_col].legend(loc='best', prop={'size': 8})
-                self.subplot[y_col].grid(True)
-                for tick in self.subplot[y_col].xaxis.get_major_ticks():
+                self.subplot[subplot_idx].legend(loc='best', prop={'size': 8})
+                self.subplot[subplot_idx].grid(True)
+                for tick in self.subplot[subplot_idx].xaxis.get_major_ticks():
                     tick.label.set_fontsize(8)
-                for tick in self.subplot[y_col].yaxis.get_major_ticks():
+                for tick in self.subplot[subplot_idx].yaxis.get_major_ticks():
                     tick.label.set_fontsize(8)
 
-            self.cursor = Cursor(self.subplot, self.canvas, self.x_value_type)
-            self.fig.canvas.mpl_connect('key_press_event', self.key_press)
+        self.cursor = Cursor(self.subplot, self.canvas, self.x_value_type)
+        self.fig.canvas.mpl_connect('key_press_event', self.key_press)
 
-            # Update window graphics
-            self.canvas.draw()
-            self.update()
+        # Update window graphics
+        self.canvas.draw()
+        self.update()
 
     def quit(self):
         plt.close('all')
@@ -253,8 +258,12 @@ class Application(Frame):
         self.plot_figure()
 
     def show_subplot(self, subplot_nb):
-        self.y_axis_remove.append(subplot_nb)
-
+        if self.show_subplot_var[subplot_nb].get() == 0:
+            # not checked
+            self.y_col_to_plot.remove(subplot_nb)
+        else:
+            # checked
+            self.y_col_to_plot.append(subplot_nb)
         self.create_widgets()
         self.plot_figure()
 
