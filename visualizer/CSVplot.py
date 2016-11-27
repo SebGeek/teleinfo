@@ -23,10 +23,10 @@ window_zoomed = False
 request_file = True
 #request_file = "../log/After_Simulation_TU4_CRS1.csv"
 #request_file = "../log/log.csv.2016-11-23"
-#request_file = "Z:/teleinfo/log/log.csv.2016-11-19"
+request_file = "Z:/teleinfo/log/log.csv.2016-11-26"
 
 
-# - menu qui indique les colonnes affichées, que l'on peut cacher
+# - menu qui indique les colonnes affichées, que l'on peut cacher + filename à enlever
 # - choix d'avoir la premiere colonne des Y mise à 0
 # - zoom sur un graph qui zoome les autres
 # - curseur sur tous les graphs, avec barre des Y qui est sur tous les graphs
@@ -46,6 +46,8 @@ class Application(Frame):
         Frame.__init__(self, self.root)
         self.root.title(title)
 
+        self.root.protocol("WM_DELETE_WINDOW", self.quit)
+
         # Menu
         menu = Menu(self.root)
         self.root.config(menu=menu)
@@ -53,7 +55,7 @@ class Application(Frame):
         menu1 = Menu(menu, tearoff=False)
         menu.add_cascade(label="Fichier", menu=menu1)
         menu1.add_command(label="Charger CSV", command=self.load_CSV)
-        menu1.add_command(label="Quitter", command=self.do_quit)
+        menu1.add_command(label="Quitter", command=self.quit)
 
         self.plot_menu = Menu(menu, tearoff=False)
         menu.add_cascade(label="Plot", menu=self.plot_menu)
@@ -235,9 +237,10 @@ class Application(Frame):
             self.canvas.draw()
             self.update()
 
-    def do_quit(self):
+    def quit(self):
         plt.close('all')
         self.root.quit()
+        self.root.destroy()  # this is necessary on Windows to prevent: "Fatal Python Error: PyEval_RestoreThread: NULL tstate"
 
     def load_CSV(self):
         if request_file == True:
@@ -277,5 +280,3 @@ if __name__ == '__main__':
         if os.path.exists('CSVplot.ico'):
             app.winfo_toplevel().iconbitmap('CSVplot.ico')
     app.mainloop()
-
-    plt.close()
