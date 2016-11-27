@@ -27,8 +27,10 @@ request_file = True
 
 
 # - menu qui indique les colonnes affichées, que l'on peut cacher
-
-# - curseur sur tous les graphs
+# - choix d'avoir la premiere colonne des Y mise à 0
+# - zoom sur un graph qui zoome les autres
+# - curseur sur tous les graphs, avec barre des Y qui est sur tous les graphs
+# - curseur qui apparait mal
 # - annotation: appui sur touche 'a' puis ajoute une colonne dans le CSV
 
 # Fonctions:
@@ -194,7 +196,8 @@ class Application(Frame):
             y_col_to_plot = range(self.nb_col)
             for y_axis in self.y_axis_remove:
                 y_col_to_plot.remove(y_axis)
-            for i in y_col_to_plot:
+            self.first_y_value = True
+            for y_col in y_col_to_plot:
                 y_values = []
                 csvfile.seek(0)
                 first_line = True
@@ -204,20 +207,25 @@ class Application(Frame):
                         first_line = False
                     else:
                         try:
-                            y_value = float(row[i+1].replace(",", "."))
+                            y_value = float(row[y_col + 1].replace(",", "."))
                         except:
-                            self.display("error, not a float value: " + row[i+1])
+                            self.display("error, not a float value: " + row[y_col + 1])
                             y_values.append(0.0)
                         else:
+                            if y_col == 0:
+                                # First y column has its values starting from origin
+                                if self.first_y_value == True:
+                                    self.first_y_value = y_value
+                                y_value -= self.first_y_value
                             y_values.append(y_value)
-                self.subplot[i].plot(x_values, y_values, label=os.path.basename(filename))
+                self.subplot[y_col].plot(x_values, y_values, label=os.path.basename(filename))
 
                 # Put a legend to the right of the current axis. Set font size
-                self.subplot[i].legend(loc='best', prop={'size': 8})
-                self.subplot[i].grid(True)
-                for tick in self.subplot[i].xaxis.get_major_ticks():
+                self.subplot[y_col].legend(loc='best', prop={'size': 8})
+                self.subplot[y_col].grid(True)
+                for tick in self.subplot[y_col].xaxis.get_major_ticks():
                     tick.label.set_fontsize(8)
-                for tick in self.subplot[i].yaxis.get_major_ticks():
+                for tick in self.subplot[y_col].yaxis.get_major_ticks():
                     tick.label.set_fontsize(8)
 
             self.cursor = Cursor(self.subplot, self.canvas, self.x_value_type)
