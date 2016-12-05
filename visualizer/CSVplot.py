@@ -23,7 +23,7 @@ window_zoomed = False
 request_file = True
 #request_file = "../log/After_Simulation_TU4_CRS1.csv"
 #request_file = "../log/log.csv.2016-11-23"
-request_file = "Z:/teleinfo/log/log.csv.2016-11-26"
+request_file = "../log/log.csv.2016-11-26"
 
 
 # - menu qui indique les colonnes affichées, que l'on peut cacher + filename à enlever
@@ -120,7 +120,7 @@ class Application(Frame):
                 delimiter_def = ","
             else:
                 delimiter_def = ""
-                print "Unknown delimiter: must be ; or ,"
+                self.display("Unknown delimiter: must be ; or ,")
 
             if first_time == True:
                 first_time = False
@@ -214,12 +214,12 @@ class Application(Frame):
                         first_line = False
                     else:
                         try:
-                            y_value = float(row[subplot_idx + 1].replace(",", "."))
+                            y_value = float(row[y_col + 1].replace(",", "."))
                         except:
-                            self.display("error, not a float value: " + row[subplot_idx + 1])
+                            self.display("error, not a float value: " + row[y_col + 1])
                             y_values.append(0.0)
                         else:
-                            if subplot_idx == 0:
+                            if y_col == 0:
                                 # First y column has its values starting from origin
                                 if self.first_y_value == True:
                                     self.first_y_value = y_value
@@ -264,6 +264,7 @@ class Application(Frame):
         else:
             # checked
             self.y_col_to_plot.append(subplot_nb)
+            self.y_col_to_plot = sorted(self.y_col_to_plot)
         self.create_widgets()
         self.plot_figure()
 
