@@ -1,2 +1,2 @@
-python Z:\teleinfo\visualizer\CSVplot.py
+python CSVplot.py
 REM pause

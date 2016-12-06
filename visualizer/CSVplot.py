@@ -22,11 +22,10 @@ matplotlib.use('TkAgg')
 window_zoomed = False
 request_file = True
 #request_file = "../log/After_Simulation_TU4_CRS1.csv"
-#request_file = "../log/log.csv.2016-11-23"
-request_file = "../log/log.csv.2016-11-26"
+#request_file = "../log/log.csv.2016-11-26"
 
 
-# - menu qui indique les colonnes affichées, que l'on peut cacher + filename à enlever
+# - menu qui indique les colonnes affichées, que l'on peut cacher
 # - choix d'avoir la premiere colonne des Y mise à 0
 #
 # - zoom sur un graph qui zoome les autres
@@ -46,17 +45,16 @@ class Application(Frame):
         self.root = root
         Frame.__init__(self, self.root)
         self.root.title(title)
-
         self.root.protocol("WM_DELETE_WINDOW", self.quit)
 
         # Menu
         menu = Menu(self.root)
         self.root.config(menu=menu)
 
-        menu1 = Menu(menu, tearoff=False)
-        menu.add_cascade(label="File", menu=menu1)
-        menu1.add_command(label="Load CSV", command=self.load_CSV)
-        menu1.add_command(label="Quit", command=self.quit)
+        self.menu_file = Menu(menu, tearoff=False)
+        menu.add_cascade(label="File", menu=self.menu_file)
+        self.menu_file.add_command(label="Load CSV", command=self.load_CSV)
+        self.menu_file.add_separator()
 
         self.plot_menu = Menu(menu, tearoff=False)
         menu.add_cascade(label="Plot", menu=self.plot_menu)
@@ -71,6 +69,7 @@ class Application(Frame):
         self.CursorOn = False
 
         self.filename_list = []
+        self.show_filename_var = {}
         self.show_subplot_var = []
         self.load_CSV()
 
@@ -253,7 +252,21 @@ class Application(Frame):
         else:
             filename = request_file
         self.filename_list.append(filename)
+        self.show_filename_var[filename] = IntVar()
+        self.show_filename_var[filename].set(1)
+        self.menu_file.add_checkbutton(label=filename, variable=self.show_filename_var[filename],
+                                       command=lambda file_name=filename: self.show_filename(file_name))
 
+        self.create_widgets()
+        self.plot_figure()
+
+    def show_filename(self, file_name):
+        if self.show_filename_var[file_name].get() == 0:
+            # not checked
+            self.filename_list.remove(file_name)
+        else:
+            # checked
+            self.filename_list.append(file_name)
         self.create_widgets()
         self.plot_figure()
 
