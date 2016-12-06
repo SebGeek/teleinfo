@@ -25,8 +25,7 @@ request_file = True
 #request_file = "../log/log.csv.2016-11-26"
 
 
-# - menu qui indique les colonnes affichées, que l'on peut cacher
-# - choix d'avoir la premiere colonne des Y mise à 0
+# - label à changer suivant colonnes affichées
 #
 # - zoom sur un graph qui zoome les autres
 # - curseur sur tous les graphs, avec barre des Y qui est sur tous les graphs
@@ -58,6 +57,10 @@ class Application(Frame):
 
         self.plot_menu = Menu(menu, tearoff=False)
         menu.add_cascade(label="Plot", menu=self.plot_menu)
+        self.over_24h = BooleanVar()
+        self.over_24h.set(True)
+        self.plot_menu.add_checkbutton(label="over 24h", variable=self.over_24h, command=self.update_graph)
+        self.plot_menu.add_separator()
 
         help_menu = Menu(menu, tearoff=False)
         menu.add_cascade(label="Help", menu=help_menu)
@@ -195,9 +198,11 @@ class Application(Frame):
 
                     if self.first_x_value == True:
                         self.first_x_value = x_value
-                    if self.x_value_type == "date":
-                        # Remove year/month/day information to display on 24h
-                        x_value = x_value.replace(year=self.first_x_value.year, month=self.first_x_value.month, day=self.first_x_value.day)
+
+                    if self.over_24h.get() == True:
+                        if self.x_value_type == "date":
+                            # Remove year/month/day information to display on 24h
+                            x_value = x_value.replace(year=self.first_x_value.year, month=self.first_x_value.month, day=self.first_x_value.day)
 
                     x_values.append(x_value)
 
@@ -222,7 +227,8 @@ class Application(Frame):
                                 # First y column has its values starting from origin
                                 if self.first_y_value == True:
                                     self.first_y_value = y_value
-                                y_value -= self.first_y_value
+                                if self.over_24h.get() == True:
+                                    y_value -= self.first_y_value
                             y_values.append(y_value)
                 self.subplot[subplot_idx].plot(x_values, y_values, label=os.path.basename(filename))
 
@@ -236,10 +242,6 @@ class Application(Frame):
 
         self.cursor = Cursor(self.subplot, self.canvas, self.x_value_type)
         self.fig.canvas.mpl_connect('key_press_event', self.key_press)
-
-        # Update window graphics
-        self.canvas.draw()
-        self.update()
 
     def quit(self):
         plt.close('all')
@@ -256,9 +258,15 @@ class Application(Frame):
         self.show_filename_var[filename].set(1)
         self.menu_file.add_checkbutton(label=filename, variable=self.show_filename_var[filename],
                                        command=lambda file_name=filename: self.show_filename(file_name))
+        self.update_graph()
 
+    def update_graph(self):
         self.create_widgets()
         self.plot_figure()
+
+        # Update window graphics
+        self.canvas.draw()
+        self.update()
 
     def show_filename(self, file_name):
         if self.show_filename_var[file_name].get() == 0:
@@ -267,8 +275,7 @@ class Application(Frame):
         else:
             # checked
             self.filename_list.append(file_name)
-        self.create_widgets()
-        self.plot_figure()
+        self.update_graph()
 
     def show_subplot(self, subplot_nb):
         if self.show_subplot_var[subplot_nb].get() == 0:
@@ -278,8 +285,7 @@ class Application(Frame):
             # checked
             self.y_col_to_plot.append(subplot_nb)
             self.y_col_to_plot = sorted(self.y_col_to_plot)
-        self.create_widgets()
-        self.plot_figure()
+        self.update_graph()
 
     @staticmethod
     def about_command():
