@@ -140,9 +140,6 @@ class Application(Frame):
                     self.y_col_to_plot = range(self.nb_col)
                 self.nb_col = len(self.y_col_to_plot)
 
-                print "self.filename_list", self.filename_list
-                print "self.y_col_to_plot", self.y_col_to_plot
-
                 # Detect the type of value in first column (reading second line)
                 second_line = csvfile.readline().split(delimiter_def)
                 try:
@@ -163,7 +160,7 @@ class Application(Frame):
                         self.subplot[subplot_idx].xaxis.set_major_locator(mdates.HourLocator())
                         self.subplot[subplot_idx].xaxis.set_major_formatter(format_ticks)
 
-                    val = list_titles[subplot_idx + 1].decode("utf-8").encode("ascii", "replace")
+                    val = list_titles[y_col + 1].decode("utf-8").encode("ascii", "replace")
                     self.subplot[subplot_idx].set_ylabel(val, fontsize='small')
 
                     if self.very_first_time == True:
