@@ -24,9 +24,10 @@ request_file = True
 #request_file = "../log/After_Simulation_TU4_CRS1.csv"
 #request_file = "../log/log.csv.2016-11-26"
 
+# ouverture de plusieurs fichiers à la fois
+# aide à l'utilisation
 
-# - label à changer suivant colonnes affichées
-#
+# Fonctions futures:
 # - zoom sur un graph qui zoome les autres
 # - curseur sur tous les graphs, avec barre des Y qui est sur tous les graphs
 # - curseur qui apparait mal
@@ -57,10 +58,6 @@ class Application(Frame):
 
         self.plot_menu = Menu(menu, tearoff=False)
         menu.add_cascade(label="Plot", menu=self.plot_menu)
-        self.over_24h = BooleanVar()
-        self.over_24h.set(True)
-        self.plot_menu.add_checkbutton(label="over 24h", variable=self.over_24h, command=self.update_graph)
-        self.plot_menu.add_separator()
 
         help_menu = Menu(menu, tearoff=False)
         menu.add_cascade(label="Help", menu=help_menu)
@@ -68,6 +65,7 @@ class Application(Frame):
 
         # Main window
         self.very_first_time = True
+        self.create_menu_over_24h_once = True
         self.first_x_value = True
         self.CursorOn = False
 
@@ -164,6 +162,14 @@ class Application(Frame):
                     self.subplot[subplot_idx].set_ylabel(val, fontsize='small')
 
                     if self.very_first_time == True:
+                        if self.x_value_type == "date":
+                            if self.create_menu_over_24h_once == True:
+                                self.create_menu_over_24h_once = False
+                                self.over_24h = BooleanVar()
+                                self.over_24h.set(True)
+                                self.plot_menu.add_checkbutton(label="x-axis over 24h / y-axis offset to 0", variable=self.over_24h, command=self.update_graph)
+                                self.plot_menu.add_separator()
+
                         self.show_subplot_var.append(IntVar())
                         self.show_subplot_var[-1].set(1)
                         self.plot_menu.add_checkbutton(label=val, variable=self.show_subplot_var[-1],
@@ -196,8 +202,8 @@ class Application(Frame):
                     if self.first_x_value == True:
                         self.first_x_value = x_value
 
-                    if self.over_24h.get() == True:
-                        if self.x_value_type == "date":
+                    if self.x_value_type == "date":
+                        if self.over_24h.get() == True:
                             # Remove year/month/day information to display on 24h
                             x_value = x_value.replace(year=self.first_x_value.year, month=self.first_x_value.month, day=self.first_x_value.day)
 
@@ -224,8 +230,9 @@ class Application(Frame):
                                 # First y column has its values starting from origin
                                 if self.first_y_value == True:
                                     self.first_y_value = y_value
-                                if self.over_24h.get() == True:
-                                    y_value -= self.first_y_value
+                                if self.x_value_type == "date":
+                                    if self.over_24h.get() == True:
+                                        y_value -= self.first_y_value
                             y_values.append(y_value)
                 self.subplot[subplot_idx].plot(x_values, y_values, label=os.path.basename(filename))
 
