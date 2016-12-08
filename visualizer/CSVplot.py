@@ -21,10 +21,9 @@ matplotlib.use('TkAgg')
 
 window_zoomed = False
 request_file = True
-#request_file = "../log/After_Simulation_TU4_CRS1.csv"
-#request_file = "../log/log.csv.2016-11-26"
+#request_file = ("../log/log.csv.2016-11-26", )
 
-# ouverture de plusieurs fichiers à la fois
+
 # aide à l'utilisation
 
 # Fonctions futures:
@@ -34,6 +33,7 @@ request_file = True
 # - annotation: appui sur touche 'a' puis ajoute une colonne dans le CSV
 
 # Fonctions:
+# ouverture de plusieurs fichiers à la fois
 # compatible Linux/Windows
 # gère première colonne en format date si respecte "%Y-%m-%d %H:%M:%S.%f"
 # Use key 'c' to activate cursor
@@ -166,7 +166,7 @@ class Application(Frame):
                             if self.create_menu_over_24h_once == True:
                                 self.create_menu_over_24h_once = False
                                 self.over_24h = BooleanVar()
-                                self.over_24h.set(True)
+                                self.over_24h.set(False)
                                 self.plot_menu.add_checkbutton(label="x-axis over 24h / y-axis offset to 0", variable=self.over_24h, command=self.update_graph)
                                 self.plot_menu.add_separator()
 
@@ -254,21 +254,25 @@ class Application(Frame):
 
     def load_CSV(self):
         if request_file == True:
-            filename = tkFileDialog.askopenfilename(initialdir=inspect.currentframe())
+            filename_list_str = tkFileDialog.askopenfilenames(initialdir=inspect.currentframe())
+            filename_list_new = self.root.splitlist(filename_list_str)
         else:
-            filename = request_file
-        self.filename_list.append(filename)
-        self.show_filename_var[filename] = IntVar()
-        self.show_filename_var[filename].set(1)
-        self.menu_file.add_checkbutton(label=filename, variable=self.show_filename_var[filename],
-                                       command=lambda file_name=filename: self.show_filename(file_name))
+            filename_list_new = request_file
+
+        for filename in filename_list_new:
+            self.show_filename_var[filename] = IntVar()
+            self.show_filename_var[filename].set(1)
+            self.menu_file.add_checkbutton(label=filename, variable=self.show_filename_var[filename],
+                                           command=lambda file_name=filename: self.show_filename(file_name))
+
+        self.filename_list += filename_list_new
         self.update_graph()
 
     def update_graph(self):
         self.create_widgets()
         self.plot_figure()
 
-        # Update window graphics
+        # Redraw window graphics
         self.canvas.draw()
         self.update()
 
