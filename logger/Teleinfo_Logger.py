@@ -183,8 +183,14 @@ class MyTimedRotatingFileHandler(logging.handlers.TimedRotatingFileHandler):
 
 if __name__ == "__main__":
     '''
-    A exécuter avec: ./Teleinfo_Logger.py -o ../log/log.csv
+    ** A exécuter avec: ./Teleinfo_Logger.py -o ../log/log.csv
 
+    ** Pour démarrage automatique:
+    sudo nano /etc/rc.local
+    Ajouter la ligne:
+    /home/pi/teleinfo/logger/Teleinfo_Logger.py -o /home/pi/teleinfo/log/log.csv &
+    
+    ** Pour démarrage depuis une session SSH:
     Pour ne pas fermer le programme en quittant la session SSH, utiliser: screen
     Pour se détacher: ctrl+a puis d
     Pour se rattacher: screen -r
