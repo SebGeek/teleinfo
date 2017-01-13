@@ -1,8 +1,32 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-""" Read one teleinfo frame and output the frame in CSV format on stdout
-"""
+
+# ** A exécuter avec: sudo ./Teleinfo_Logger.py -o ../log/log.csv &
+#
+# ** Pour démarrage depuis une session SSH:
+# Pour ne pas fermer le programme en quittant la session SSH, utiliser: screen
+# Pour se détacher: ctrl+a puis d
+# Pour se rattacher: screen -r
+#
+# HP      :  6h30 - 22h30
+# HC      : 22h30 -  6h30
+#
+# ADCO    : Identifiant du compteur
+# OPTARIF : Option tarifaire (type d’abonnement)
+# ISOUSC  : Intensité souscrite
+# HCHC    : Index heures creuses si option = heures creuses (en Wh)
+# HCHP    : Index heures pleines si option = heures creuses (en Wh)
+# PTEC    : Période tarifaire en cours
+# IINST   : Intensité instantanée (en ampères)
+# IMAX    : Intensité maximale (en ampères)
+# PAPP    : Puissance apparente (en Volt.ampères)
+# HHPHC   : Groupe horaire si option = heures creuses ou tempo
+#
+# colonne 0: date/heure
+# colonne 1: prix (€) = index HC * Prix HC + index HP * Prix HP
+# colonne 2: puissance (W)
+# colonne 3: HC=0, HP=1
 
 import serial
 import traceback
@@ -182,39 +206,6 @@ class MyTimedRotatingFileHandler(logging.handlers.TimedRotatingFileHandler):
 
 
 if __name__ == "__main__":
-    '''
-    ** A exécuter avec: ./Teleinfo_Logger.py -o ../log/log.csv
-
-    ** Pour démarrage automatique:
-    sudo nano /etc/rc.local
-    Ajouter la ligne:
-    /home/pi/teleinfo/logger/Teleinfo_Logger.py -o /home/pi/teleinfo/log/log.csv &
-    
-    ** Pour démarrage depuis une session SSH:
-    Pour ne pas fermer le programme en quittant la session SSH, utiliser: screen
-    Pour se détacher: ctrl+a puis d
-    Pour se rattacher: screen -r
-
-    HP      :  6h30 - 22h30
-    HC      : 22h30 -  6h30
-    
-    ADCO    : Identifiant du compteur
-    OPTARIF : Option tarifaire (type d’abonnement)
-    ISOUSC  : Intensité souscrite
-    HCHC    : Index heures creuses si option = heures creuses (en Wh)
-    HCHP    : Index heures pleines si option = heures creuses (en Wh)
-    PTEC    : Période tarifaire en cours
-    IINST   : Intensité instantanée (en ampères)
-    IMAX    : Intensité maximale (en ampères)
-    PAPP    : Puissance apparente (en Volt.ampères)
-    HHPHC   : Groupe horaire si option = heures creuses ou tempo
-
-    colonne 0: date/heure
-    colonne 1: prix (€) = index HC * Prix HC + index HP * Prix HP
-    colonne 2: puissance (W)
-    colonne 3: HC=0, HP=1
-    '''
-
     ####################################
     # read arguments
     parser = argparse.ArgumentParser()

@@ -1,0 +1,114 @@
+﻿* Création carte microSD avec Win32DiskImager et image raspbian-jessie Lite
+
+* login pi / pwd raspberry (par defaut)
+sudo raspi-config
+    Clavier français
+    mot de passe: *****
+    enable SSH
+    timezone Paris
+   
+* Activation wifi DHCP
+sudo nano /etc/network/interfaces
+<<
+auto lo
+iface lo inet loopback
+
+iface eth0 inet manual
+
+allow-hotplug wlan0
+auto wlan0
+iface wlan0 inet dhcp
+wpa-ssid *****
+wpa-psk *****
+>>
+sudo ifdown wlan0
+sudo ifup wlan0
+
+* Mise à jour
+sudo apt-get update
+sudo apt-get upgrade
+
+* Se connecter à l'interface d'admin de la Livebox, pour donner le nom raspberry à l'équipement raspberry dans la partie DNS
+
+* SSH avec login pi / pwd pi sur nom machine raspberry, connection par clef
+Copier la clef publique de Putty sur le raspberry pour s'y connecter
+cd ~
+mkdir -p .ssh
+cat >.ssh/authorized_keys
+copier/coller la clef publique trouvée avec PuttyGen, en faisant load de la clef privée
+touche entrée
+ctrl+D
+
+* SAMBA (partage répertoire Windows)
+sudo apt-get install samba samba-common-bin
+
+sudo nano /etc/samba/smb.conf
+<<
+[global]
+   workgroup = WORKGROUP
+   server string = Raspberry pi 2
+   netbios name = Linux
+   dns proxy = no
+   guest account = nobody
+   security = user
+   map to guest = bad user
+
+[Guest share]
+comment = Partage Samba sur Raspberry Pi
+path = /home/pi/partage
+browseable = yes
+read only = no
+guest ok = yes
+create mask = 0777
+>>
+
+mkdir ~/partage
+sudo chown -R nobody.nogroup ~/partage/
+sudo chmod 777 ~/partage/
+
+sudo /etc/init.d/samba restart
+
+* GIT teleinfo
+sudo apt-get install git
+cd ~/partage
+git clone https://github.com/SebGeek/teleinfo.git
+
+* Pour éviter les problèmes de corruption de la carte SD
+** suppression du SWAP
+sudo apt-get remove dphys-swapfile
+sudo apt-get autoremove
+sudo rm -f /var/swap
+ 
+** Utilisation de tmpfs
+sudo nano /etc/fstab
+<<
+tmpfs    /tmp    tmpfs    defaults,noatime,nosuid,size=10m    0 0
+tmpfs    /var/tmp    tmpfs    defaults,noatime,nosuid,size=10m    0 0
+tmpfs    /var/log    tmpfs    defaults,noatime,nosuid,mode=0755,size=10m    0 0
+>>
+
+* Activer liaison série /dev/ttyAMA0
+- sudo raspi-config
+    disable serial login
+- sudo nano /boot/cmdline.txt
+    dwc_otg.lpm_enable=0 console=tty1 root=/dev/mmcblk0p2 rootfstype=ext4 elevator=deadline fsck.repair=yes rootwait
+- sudo nano /boot/config.txt
+    enable_uart=1
+- si besoin: sudo systemctl mask serial-getty@ttyAMA0.service
+- sudo nano /etc/rc.local
+    Dans le fichier, juste avant exit 0, il faut ajouter la ligne suivante:
+        stty -F /dev/ttyAMA0 1200 sane evenp parenb cs7 -crtscts
+
+* install screen
+sudo apt-get install screen
+
+* install PIP
+sudo apt-get install python-pip
+
+* install serial
+sudo python -m pip install pyserial
+
+* Démarrage de teleinfo looger
+screen
+sudo ./Teleinfo_Logger.py -o ../log/log.csv &
+ctrl + A puis D
