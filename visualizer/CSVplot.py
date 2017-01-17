@@ -24,13 +24,11 @@ request_file = True
 #request_file = ("../log/log.csv.2016-11-26", )
 
 
-# aide à l'utilisation
-
 # Fonctions futures:
 # - zoom sur un graph qui zoome les autres
 # - curseur sur tous les graphs, avec barre des Y qui est sur tous les graphs
 # - curseur qui apparait mal
-# - annotation: appui sur touche 'a' puis ajoute une colonne dans le CSV
+
 
 # Fonctions:
 # ouverture de plusieurs fichiers à la fois
@@ -104,9 +102,10 @@ class Application(Frame):
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.root)
         self.canvas._tkcanvas.config(background='white', borderwidth=0, highlightthickness=0)
         self.canvas.get_tk_widget().grid(row=row_current, column=0, sticky="nsew")
-        if not os.name == "posix":
-            toolbar = NavigationToolbar2TkAgg(self.canvas, self.root)
-            toolbar.grid(row=row_current, column=0, sticky="nw")
+
+        toolbar_frame = Frame(self.root)
+        NavigationToolbar2TkAgg(self.canvas, toolbar_frame)
+        toolbar_frame.grid(row=row_current, column=0, sticky="nw")
 
     def plot_figure(self):
         first_time = True
@@ -132,11 +131,11 @@ class Application(Frame):
                 last_column_empty = 0
                 if list_titles[-1].strip() == "":
                     last_column_empty = 1
-                self.nb_col = len(list_titles) - last_column_empty - 1 # do not count the first column (x axis)
+                nb_col = len(list_titles) - last_column_empty - 1 # do not count the first column (x axis)
 
                 if self.very_first_time == True:
-                    self.y_col_to_plot = range(self.nb_col)
-                self.nb_col = len(self.y_col_to_plot)
+                    self.y_col_to_plot = range(nb_col)
+                nb_col = len(self.y_col_to_plot)
 
                 # Detect the type of value in first column (reading second line)
                 second_line = csvfile.readline().split(delimiter_def)
@@ -150,7 +149,7 @@ class Application(Frame):
                 self.subplot = []
                 for subplot_idx, y_col in enumerate(self.y_col_to_plot):
                     # (nb_columns, nb_lines, position)
-                    self.subplot.append(self.fig.add_subplot(self.nb_col, 1, subplot_idx+1))
+                    self.subplot.append(self.fig.add_subplot(nb_col, 1, subplot_idx+1))
 
                     # format the x ticks
                     if self.x_value_type == "date":
