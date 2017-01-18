@@ -24,18 +24,9 @@ request_file = True
 #request_file = ("../log/log.csv.2016-11-26", )
 
 
-# Fonctions futures:
-# - zoom sur un graph qui zoome les autres
-# - curseur sur tous les graphs, avec barre des Y qui est sur tous les graphs
-# - curseur qui apparait mal
-
-
-# Fonctions:
-# ouverture de plusieurs fichiers à la fois
-# compatible Linux/Windows
-# gère première colonne en format date si respecte "%Y-%m-%d %H:%M:%S.%f"
-# Use key 'c' to activate cursor
-# Use mouse middle button for a second cursor to show difference
+# TBD:
+# - gérer le cas où il n'y a pas de première colonne temporelle (choix) First column is not X-axis
+# - zoom sur un graph qui zoome les autres (axe X)
 
 
 class Application(Frame):
@@ -64,8 +55,10 @@ class Application(Frame):
         # Main window
         self.very_first_time = True
         self.create_menu_over_24h_once = True
+        self.create_menu_unselect_all_plots_once = True
         self.first_x_value = True
         self.CursorOn = False
+        self.cursor = None
 
         self.filename_list = []
         self.show_filename_var = {}
@@ -166,8 +159,14 @@ class Application(Frame):
                                 self.create_menu_over_24h_once = False
                                 self.over_24h = BooleanVar()
                                 self.over_24h.set(False)
-                                self.plot_menu.add_checkbutton(label="x-axis over 24h / y-axis offset to 0", variable=self.over_24h, command=self.update_graph)
+                                self.plot_menu.add_checkbutton(label="x-axis over 24h / y-axis offset to 0",
+                                                               variable=self.over_24h, command=self.update_graph)
                                 self.plot_menu.add_separator()
+
+                        if self.create_menu_unselect_all_plots_once == True:
+                            self.create_menu_unselect_all_plots_once = False
+                            self.plot_menu.add_command(label="Unselect all plots", command=self.unselect_all_plots)
+                            self.plot_menu.add_separator()
 
                         self.show_subplot_var.append(IntVar())
                         self.show_subplot_var[-1].set(1)
@@ -235,7 +234,7 @@ class Application(Frame):
                             y_values.append(y_value)
                 self.subplot[subplot_idx].plot(x_values, y_values, label=os.path.basename(filename))
 
-                # Put a legend to the right of the current axis. Set font size
+                # Put a legend on the current axis. Set font size
                 self.subplot[subplot_idx].legend(loc='best', prop={'size': 8})
                 self.subplot[subplot_idx].grid(True)
                 for tick in self.subplot[subplot_idx].xaxis.get_major_ticks():
@@ -243,8 +242,12 @@ class Application(Frame):
                 for tick in self.subplot[subplot_idx].yaxis.get_major_ticks():
                     tick.label.set_fontsize(8)
 
-        self.cursor = Cursor(self.subplot, self.canvas, self.x_value_type)
-        self.fig.canvas.mpl_connect('key_press_event', self.key_press)
+        if self.subplot != []:
+            if self.cursor != None:
+                self.cursor.close()
+                self.cursor = None
+            self.cursor = Cursor(self.subplot, self.canvas, self.x_value_type)
+            self.fig.canvas.mpl_connect('key_press_event', self.key_press)
 
     def quit(self):
         plt.close('all')
@@ -258,18 +261,20 @@ class Application(Frame):
         else:
             filename_list_new = request_file
 
-        for filename in filename_list_new:
-            self.show_filename_var[filename] = IntVar()
-            self.show_filename_var[filename].set(1)
-            self.menu_file.add_checkbutton(label=filename, variable=self.show_filename_var[filename],
-                                           command=lambda file_name=filename: self.show_filename(file_name))
+        if filename_list_new != []:
+            for filename in filename_list_new:
+                self.show_filename_var[filename] = IntVar()
+                self.show_filename_var[filename].set(1)
+                self.menu_file.add_checkbutton(label=filename, variable=self.show_filename_var[filename],
+                                               command=lambda file_name=filename: self.show_filename(file_name))
 
-        self.filename_list += filename_list_new
-        self.update_graph()
+            self.filename_list += filename_list_new
+            self.update_graph()
 
     def update_graph(self):
         self.create_widgets()
-        self.plot_figure()
+        if self.filename_list != []:
+            self.plot_figure()
 
         # Redraw window graphics
         self.canvas.draw()
@@ -294,9 +299,28 @@ class Application(Frame):
             self.y_col_to_plot = sorted(self.y_col_to_plot)
         self.update_graph()
 
+    def unselect_all_plots(self):
+        self.y_col_to_plot = []
+        for subplot in self.show_subplot_var:
+            subplot.set(0)
+        self.update_graph()
+
     @staticmethod
     def about_command():
-        tkMessageBox.showinfo("About", "CSV plotter\n\nS. Auray\n20/11/2016")
+        tkMessageBox.showinfo("A propos", '''CSV plotter
+
+Fonctions:
+- ouverture de plusieurs fichiers à la fois
+- compatible Linux/Windows
+- gère première colonne en format date si respecte "%Y-%m-%d %H:%M:%S.%f"
+  sinon utilise en flottant
+  sinon possibilité d'utiliser "First column is not X-axis"
+- Use key 'c' to activate cursor (seulement dans le premier graphe)
+- Use mouse middle button for a second cursor to show difference
+
+- A venir: curseur sur tous les graphs, avec barre des Y qui est sur tous les graphs
+
+  S. Auray - Version du 18/01/2017''')
 
 
 if __name__ == '__main__':
