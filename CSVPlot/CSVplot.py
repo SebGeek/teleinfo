@@ -16,13 +16,14 @@ import matplotlib
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-from cursor import Cursor
+# from cursor import Cursor
 matplotlib.use('TkAgg')
 
 window_zoomed = False
 request_file = True
 #request_file = ("../log/log.csv.2016-11-26", )
 #request_file = ("../log/cpu_end_mem_stats.log", )
+request_file = ("../log/Dashboard_endur_2015_12_09_01-44-10_max_cpu_load.csv", )
 
 
 # TBD:
@@ -59,8 +60,8 @@ class Application(Frame):
         self.create_menu_unselect_all_plots_once = True
         self.first_x_value = True
         self.x_value_type = "to be detected"
-        self.CursorOn = False
-        self.cursor = None
+        # self.CursorOn = False
+        # self.cursor = None
 
         self.filename_list = []
         self.show_filename_var = {}
@@ -71,19 +72,19 @@ class Application(Frame):
     def display(msg):
         print msg
 
-    def key_press(self, event):
-        if str(event.key).endswith("c"):
-            if self.CursorOn:
-                # cursors OFF
-                self.fig.canvas.mpl_disconnect(self.binding_id_move)
-                self.fig.canvas.mpl_disconnect(self.binding_id_click)
-                self.cursor.clear_cursors()
-                self.CursorOn = False
-            else:
-                # cursors ON
-                self.binding_id_move = self.fig.canvas.mpl_connect('motion_notify_event', self.cursor.mouse_move)
-                self.binding_id_click = self.fig.canvas.mpl_connect('button_press_event', self.cursor.mouse_click)
-                self.CursorOn = True
+    # def key_press(self, event):
+    #     if str(event.key).endswith("c"):
+    #         if self.CursorOn:
+    #             # cursors OFF
+    #             self.fig.canvas.mpl_disconnect(self.binding_id_move)
+    #             self.fig.canvas.mpl_disconnect(self.binding_id_click)
+    #             self.cursor.clear_cursors()
+    #             self.CursorOn = False
+    #         else:
+    #             # cursors ON
+    #             self.binding_id_move = self.fig.canvas.mpl_connect('motion_notify_event', self.cursor.mouse_move)
+    #             self.binding_id_click = self.fig.canvas.mpl_connect('button_press_event', self.cursor.mouse_click)
+    #             self.CursorOn = True
 
     def create_widgets(self):
         # Define a weight for automatic resize of components
@@ -199,7 +200,11 @@ class Application(Frame):
                         except:
                             self.display("error, not a date value (%Y-%m-%d %H:%M:%S.%f): " + row[0])
                     else:
-                        x_value = float(row[0].replace(",", "."))
+                        try:
+                            x_value = float(row[0].replace(",", "."))
+                        except:
+                            print "Error in row: " + str(row)
+                            raise
 
                     if self.first_x_value == True:
                         self.first_x_value = x_value
@@ -250,12 +255,12 @@ class Application(Frame):
                 for tick in self.subplot[subplot_idx].yaxis.get_major_ticks():
                     tick.label.set_fontsize(8)
 
-        if self.subplot != []:
-            if self.cursor != None:
-                self.cursor.close()
-                self.cursor = None
-            self.cursor = Cursor(self.subplot, self.canvas, self.x_value_type)
-            self.fig.canvas.mpl_connect('key_press_event', self.key_press)
+        # if self.subplot != []:
+        #     if self.cursor != None:
+        #         self.cursor.close()
+        #         self.cursor = None
+        #     self.cursor = Cursor(self.subplot, self.canvas, self.x_value_type)
+        #     self.fig.canvas.mpl_connect('key_press_event', self.key_press)
 
     def quit(self):
         plt.close('all')
