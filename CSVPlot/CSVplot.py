@@ -22,6 +22,7 @@ matplotlib.use('TkAgg')
 window_zoomed = False
 request_file = True
 #request_file = ("../log/log.csv.2016-11-26", )
+#request_file = ("../log/cpu_end_mem_stats.log", )
 
 
 # TBD:
@@ -57,6 +58,7 @@ class Application(Frame):
         self.create_menu_over_24h_once = True
         self.create_menu_unselect_all_plots_once = True
         self.first_x_value = True
+        self.x_value_type = "to be detected"
         self.CursorOn = False
         self.cursor = None
 
@@ -130,14 +132,15 @@ class Application(Frame):
                     self.y_col_to_plot = range(nb_col)
                 nb_col = len(self.y_col_to_plot)
 
-                # Detect the type of value in first column (reading second line)
-                second_line = csvfile.readline().split(delimiter_def)
-                try:
-                    datetime.datetime.strptime(second_line[0], "%Y-%m-%d %H:%M:%S.%f")
-                except:
-                    self.x_value_type = "float"
-                else:
-                    self.x_value_type = "date"
+                if self.x_value_type != "forced":
+                    # Detect the type of value in first column (reading second line)
+                    second_line = csvfile.readline().split(delimiter_def)
+                    try:
+                        datetime.datetime.strptime(second_line[0], "%Y-%m-%d %H:%M:%S.%f")
+                    except:
+                        self.x_value_type = "float"
+                    else:
+                        self.x_value_type = "date"
 
                 self.subplot = []
                 for subplot_idx, y_col in enumerate(self.y_col_to_plot):
@@ -161,11 +164,11 @@ class Application(Frame):
                                 self.over_24h.set(False)
                                 self.plot_menu.add_checkbutton(label="x-axis over 24h / y-axis offset to 0",
                                                                variable=self.over_24h, command=self.update_graph)
-                                self.plot_menu.add_separator()
 
                         if self.create_menu_unselect_all_plots_once == True:
                             self.create_menu_unselect_all_plots_once = False
                             self.plot_menu.add_command(label="Unselect all plots", command=self.unselect_all_plots)
+                            self.plot_menu.add_command(label="First column is not a X-axis", command=self.first_column_is_not_x_axis)
                             self.plot_menu.add_separator()
 
                         self.show_subplot_var.append(IntVar())
@@ -181,6 +184,7 @@ class Application(Frame):
 
             # Read X values
             x_values = []
+            line_number = 0
             csvfile.seek(0)
             first_line = True
             reader = csv.reader(csvfile, delimiter=delimiter_def)
@@ -205,7 +209,11 @@ class Application(Frame):
                             # Remove year/month/day information to display on 24h
                             x_value = x_value.replace(year=self.first_x_value.year, month=self.first_x_value.month, day=self.first_x_value.day)
 
-                    x_values.append(x_value)
+                    if self.x_value_type == "forced":
+                        x_values.append(line_number)
+                        line_number += 1
+                    else:
+                        x_values.append(x_value)
 
             # Read Y values and plot
             self.first_y_value = True
@@ -305,22 +313,30 @@ class Application(Frame):
             subplot.set(0)
         self.update_graph()
 
+    def first_column_is_not_x_axis(self):
+        self.x_value_type = "forced"
+        self.update_graph()
+
     @staticmethod
     def about_command():
-        tkMessageBox.showinfo("A propos", '''CSV plotter
+        tkMessageBox.showinfo("A propos", '''
+        CSV plotter
+
+Auteur: S. Auray - Version du 18/01/2017
 
 Fonctions:
-- ouverture de plusieurs fichiers à la fois
-- compatible Linux/Windows
-- gère première colonne en format date si respecte "%Y-%m-%d %H:%M:%S.%f"
+- Compatible Linux & Windows
+- Ouverture de plusieurs fichiers à la fois
+- Détection du type de séparateur dans le fichier
+- Gère première colonne en format date si respecte "%Y-%m-%d %H:%M:%S.%f"
   sinon utilise en flottant
   sinon possibilité d'utiliser "First column is not X-axis"
-- Use key 'c' to activate cursor (seulement dans le premier graphe)
+
+A venir:
+- curseur sur tous les graphs, avec barre des Y qui est sur tous les graphs
+- Use key 'c' to activate cursor
 - Use mouse middle button for a second cursor to show difference
-
-- A venir: curseur sur tous les graphs, avec barre des Y qui est sur tous les graphs
-
-  S. Auray - Version du 18/01/2017''')
+''')
 
 
 if __name__ == '__main__':
