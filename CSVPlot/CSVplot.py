@@ -27,10 +27,6 @@ request_file = True
 #request_file = ("../log/Dashboard_endur_2015_12_09_01-44-10_max_cpu_load.csv", )
 
 
-# TBD:
-# - commande pour rafraichissement du graphe suivant les courbes sélectionnées
-
-
 class Application(Frame):
     def __init__(self, root, title):
         self.root = root
@@ -154,8 +150,10 @@ class Application(Frame):
 
                         if self.create_menu_unselect_all_plots_once == True:
                             self.create_menu_unselect_all_plots_once = False
-                            self.plot_menu.add_command(label="Unselect all plots", command=self.unselect_all_plots)
                             self.plot_menu.add_command(label="First column is not a X-axis", command=self.first_column_is_not_x_axis)
+                            self.plot_menu.add_separator()
+                            self.plot_menu.add_command(label="Unselect all plots", command=self.unselect_all_plots)
+                            self.plot_menu.add_command(label="Draw plots", command=self.update_graph)
                             self.plot_menu.add_separator()
 
                         self.show_subplot_var.append(IntVar())
@@ -321,13 +319,11 @@ class Application(Frame):
             # checked
             self.y_col_to_plot.append(subplot_nb)
             self.y_col_to_plot = sorted(self.y_col_to_plot)
-        self.update_graph()
 
     def unselect_all_plots(self):
         self.y_col_to_plot = []
         for subplot in self.show_subplot_var:
             subplot.set(0)
-        self.update_graph()
 
     def first_column_is_not_x_axis(self):
         self.x_value_type = "forced"
