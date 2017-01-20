@@ -20,16 +20,15 @@ import matplotlib.dates as mdates
 matplotlib.use('TkAgg')
 
 window_zoomed = False
-#request_file = True
-request_file = ("../log/Classeur1.csv", )
+request_file = True
+#request_file = ("../log/Classeur1.csv", )
 #request_file = ("../log/log.csv.2016-11-26", )
 #request_file = ("../log/cpu_end_mem_stats.log", )
 #request_file = ("../log/Dashboard_endur_2015_12_09_01-44-10_max_cpu_load.csv", )
 
 
 # TBD:
-# - zoom sur un graph qui zoome les autres (axe X)
-# - optimisation: si seulement changement d'affichage des colonnes, ne pas relire les fichiers
+# - commande pour rafraichissement du graphe suivant les courbes sélectionnées
 
 
 class Application(Frame):
@@ -253,15 +252,12 @@ class Application(Frame):
         #     self.fig.canvas.mpl_connect('key_press_event', self.key_press)
 
     def ax_update(self, ax):
-        #ax.set_autoscale_on(False)  # Otherwise, infinite loop
         x_lim = ax.get_xlim()
-        print x_lim
 
-        # à appliquer sur les autres plots (sinon récursivité)
-        #self.subplot[-1].set_xlim(x_lim)
-
-        #self.subplot[-1].figure.canvas.draw()
-
+        # To avoid a recusivity problem, apply new X axis limits on others plots, not itself
+        for subplot in self.subplot:
+            if x_lim != subplot.get_xlim():
+                subplot.set_xlim(x_lim)
 
     # def key_press(self, event):
     #     if str(event.key).endswith("c"):
