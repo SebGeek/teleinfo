@@ -345,9 +345,10 @@ Fonctions:
   sinon possibilité d'utiliser "First column is not X-axis"
 
 A venir:
-- curseur sur tous les graphs, avec barre des Y qui est sur tous les graphs
+- zoom sans changer l'echelle des Y
+- curseur sur les graphs
 - Use key 'c' to activate cursor
-- Use mouse middle button for a second cursor to show difference
+- Use mouse middle button for a second cursor to show difference (ligne oblique)
 ''')
 
 
