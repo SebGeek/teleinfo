@@ -49,7 +49,6 @@ workgroup = WORKGROUP
 server string = Raspberry Pi 2
 netbios name = TeleInfo
 dns proxy = no
-security = SHARE
 acl allow execute always = True
 
 [partage]
@@ -73,7 +72,7 @@ cd ~/partage
 git clone https://github.com/SebGeek/teleinfo.git
 
 * Pour éviter les problèmes de corruption de la carte SD
-** suppression du SWAP
+** suppression du swap sur la carte SD
 sudo apt-get remove dphys-swapfile
 sudo apt-get autoremove
 sudo rm -f /var/swap
@@ -109,5 +108,5 @@ sudo python -m pip install pyserial
 
 * Démarrage de teleinfo looger
 screen
-sudo ./Teleinfo_Logger.py -o ../log/log.csv &
+sudo python Teleinfo_Logger.py -o ../log/log.csv &
 ctrl + A puis D
