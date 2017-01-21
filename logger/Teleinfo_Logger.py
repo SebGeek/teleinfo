@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 
-# ** A exécuter avec: sudo ./Teleinfo_Logger.py -o ../log/log.csv &
+# ** A exécuter avec: sudo python Teleinfo_Logger.py -o ../log/log.csv &
 #
 # ** Pour démarrage depuis une session SSH:
 # Pour ne pas fermer le programme en quittant la session SSH, utiliser: screen
