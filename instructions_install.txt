@@ -45,26 +45,25 @@ sudo apt-get install samba samba-common-bin
 sudo nano /etc/samba/smb.conf
 <<
 [global]
-   workgroup = WORKGROUP
-   server string = Raspberry pi 2
-   netbios name = Linux
-   dns proxy = no
-   guest account = nobody
-   security = user
-   map to guest = bad user
+workgroup = WORKGROUP
+server string = Raspberry Pi 2
+netbios name = TeleInfo
+dns proxy = no
+security = SHARE
+acl allow execute always = True
 
-[Guest share]
-comment = Partage Samba sur Raspberry Pi
+[partage]
+comment = Partage TeleInfo
 path = /home/pi/partage
 browseable = yes
-read only = no
-guest ok = yes
-create mask = 0777
+writeable = yes
+printable = no
+valid users = pi
 >>
 
 mkdir ~/partage
-sudo chown -R nobody.nogroup ~/partage/
-sudo chmod 777 ~/partage/
+sudo smbpasswd -a pi
+   password ****
 
 sudo /etc/init.d/samba restart
 
