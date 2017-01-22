@@ -16,7 +16,9 @@ import matplotlib
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-# from cursor import Cursor
+#from cursor import Cursor
+from cursor import MultiCursor_enhanced
+
 matplotlib.use('TkAgg')
 
 window_zoomed = False
@@ -57,7 +59,7 @@ class Application(Frame):
         self.first_x_value = True
         self.x_value_type = "to be detected"
         # self.CursorOn = False
-        # self.cursor = None
+        self.cursor = None
 
         self.filename_list = []
         self.show_filename_var = {}
@@ -242,13 +244,17 @@ class Application(Frame):
                 # Detect if user has zoomed on a plot
                 self.subplot[subplot_idx].callbacks.connect('xlim_changed', self.ax_update)
 
-        # if self.subplot != []:
-        #     if self.cursor != None:
-        #         self.cursor.close()
-        #         self.cursor = None
-        #     self.cursor = Cursor(self.subplot, self.canvas, self.x_value_type)
-        #     self.fig.canvas.mpl_connect('key_press_event', self.key_press)
+        if self.subplot != []:
+            if self.cursor != None:
+                self.cursor.close()
+                self.cursor = None
+            #self.cursor = Cursor(self.subplot, self.canvas, self.x_value_type)
+            self.multi = MultiCursor_enhanced(self.canvas, self.subplot, color='r', lw=1, horizOn=True, vertOn=True)
 
+        # self.binding_id_move = self.fig.canvas.mpl_connect('motion_notify_event', self.cursor.mouse_move)
+        # self.binding_id_click = self.fig.canvas.mpl_connect('button_press_event', self.cursor.mouse_click)
+
+    # Keep same X-axis coordinates for all subplots
     def ax_update(self, ax):
         x_lim = ax.get_xlim()
 
@@ -256,20 +262,6 @@ class Application(Frame):
         for subplot in self.subplot:
             if x_lim != subplot.get_xlim():
                 subplot.set_xlim(x_lim)
-
-    # def key_press(self, event):
-    #     if str(event.key).endswith("c"):
-    #         if self.CursorOn:
-    #             # cursors OFF
-    #             self.fig.canvas.mpl_disconnect(self.binding_id_move)
-    #             self.fig.canvas.mpl_disconnect(self.binding_id_click)
-    #             self.cursor.clear_cursors()
-    #             self.CursorOn = False
-    #         else:
-    #             # cursors ON
-    #             self.binding_id_move = self.fig.canvas.mpl_connect('motion_notify_event', self.cursor.mouse_move)
-    #             self.binding_id_click = self.fig.canvas.mpl_connect('button_press_event', self.cursor.mouse_click)
-    #             self.CursorOn = True
 
     def quit(self):
         plt.close('all')
