@@ -16,14 +16,14 @@ import matplotlib
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-#from cursor import Cursor
-from cursor import MultiCursor_enhanced
+from cursor import Cursor
+#from cursor import MultiCursor_enhanced
 
 matplotlib.use('TkAgg')
 
 window_zoomed = False
-request_file = True
-#request_file = ("../log/Classeur1.csv", )
+#request_file = True
+request_file = ("../log/Classeur1.csv", )
 #request_file = ("../log/log.csv.2016-11-26", )
 #request_file = ("../log/cpu_end_mem_stats.log", )
 #request_file = ("../log/Dashboard_endur_2015_12_09_01-44-10_max_cpu_load.csv", )
@@ -248,11 +248,11 @@ class Application(Frame):
             if self.cursor != None:
                 self.cursor.close()
                 self.cursor = None
-            #self.cursor = Cursor(self.subplot, self.canvas, self.x_value_type)
-            self.multi = MultiCursor_enhanced(self.canvas, self.subplot, color='r', lw=1, horizOn=True, vertOn=True)
+            self.cursor = Cursor(self.subplot, self.canvas, self.x_value_type)
+            #self.multi = MultiCursor_enhanced(self.canvas, self.subplot, color='r', lw=1, horizOn=True, vertOn=True)
 
-        # self.binding_id_move = self.fig.canvas.mpl_connect('motion_notify_event', self.cursor.mouse_move)
-        # self.binding_id_click = self.fig.canvas.mpl_connect('button_press_event', self.cursor.mouse_click)
+        self.binding_id_move = self.fig.canvas.mpl_connect('motion_notify_event', self.cursor.mouse_move)
+        self.binding_id_click = self.fig.canvas.mpl_connect('button_press_event', self.cursor.mouse_click)
 
     # Keep same X-axis coordinates for all subplots
     def ax_update(self, ax):
