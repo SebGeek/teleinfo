@@ -106,7 +106,14 @@ sudo apt-get install python-pip
 * install serial
 sudo python -m pip install pyserial
 
-* Démarrage de teleinfo looger
+* MANUAL start-up of teleinfo looger
 screen
+cd partage/teleinfo/logger/
 sudo python Teleinfo_Logger.py -o ../log/log.csv &
 ctrl + A puis D
+
+* AUTOMATIC start-up of teleinfo looger (after raspberry start-up)
+sudo nano /etc/rc.local
+Add line:
+python /home/pi/partage/teleinfo/logger/Teleinfo_Logger.py -o /home/pi/partage/teleinfo/log/log.csv &
+(no need sudo before python because rc.local is executed as root)
