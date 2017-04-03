@@ -12,18 +12,24 @@ import tkMessageBox
 import tkFileDialog
 
 # Matplotlib
-import matplotlib
+#import matplotlib
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from cursor import Cursor
 #from cursor import MultiCursor_enhanced
 
-matplotlib.use('TkAgg')
+#matplotlib.use('TkAgg')
 
 window_zoomed = False
+
+cursor_on = False
+line_on = False
+show_day = True
+
 #request_file = True
-request_file = ("../log/Classeur1.csv", )
+request_file = ("/home/obens/_e_sauray/reports/riyadh/TC_results.csv", )
+#request_file = ("../log/Classeur1.csv", )
 #request_file = ("../log/log.csv.2016-11-26", )
 #request_file = ("../log/cpu_end_mem_stats.log", )
 #request_file = ("../log/Dashboard_endur_2015_12_09_01-44-10_max_cpu_load.csv", )
@@ -134,7 +140,10 @@ class Application(Frame):
 
                     # format the x ticks
                     if self.x_value_type == "date":
-                        format_ticks = mdates.DateFormatter('%H')
+                        if show_day == True:
+                            format_ticks = mdates.DateFormatter('%H\n%d')
+                        else:
+                            format_ticks = mdates.DateFormatter('%H')
                         self.subplot[subplot_idx].xaxis.set_major_locator(mdates.HourLocator())
                         self.subplot[subplot_idx].xaxis.set_major_formatter(format_ticks)
 
@@ -220,7 +229,7 @@ class Application(Frame):
                         try:
                             y_value = float(row[y_col + 1].replace(",", "."))
                         except:
-                            self.display("error, not a float value: " + row[y_col + 1])
+                            self.display("error, not a float value in: " + str(row))
                             y_values.append(0.0)
                         else:
                             if y_col == 0:
@@ -231,7 +240,11 @@ class Application(Frame):
                                     if self.over_24h.get() == True:
                                         y_value -= self.first_y_value
                             y_values.append(y_value)
-                self.subplot[subplot_idx].plot(x_values, y_values, label=os.path.basename(filename))
+
+                if line_on == True:
+                    self.subplot[subplot_idx].plot(x_values, y_values, label=os.path.basename(filename))
+                else:
+                    self.subplot[subplot_idx].plot(x_values, y_values, linestyle='None', marker='o', label=os.path.basename(filename))
 
                 # Put a legend on the current axis. Set font size
                 self.subplot[subplot_idx].legend(loc='best', prop={'size': 8})
@@ -248,11 +261,13 @@ class Application(Frame):
             if self.cursor != None:
                 self.cursor.close()
                 self.cursor = None
-            self.cursor = Cursor(self.subplot, self.canvas, self.x_value_type)
+            if cursor_on == True:
+                self.cursor = Cursor(self.subplot, self.canvas, self.x_value_type)
             #self.multi = MultiCursor_enhanced(self.canvas, self.subplot, color='r', lw=1, horizOn=True, vertOn=True)
 
-        self.binding_id_move = self.fig.canvas.mpl_connect('motion_notify_event', self.cursor.mouse_move)
-        self.binding_id_click = self.fig.canvas.mpl_connect('button_press_event', self.cursor.mouse_click)
+        if cursor_on == True:
+            self.binding_id_move = self.fig.canvas.mpl_connect('motion_notify_event', self.cursor.mouse_move)
+            self.binding_id_click = self.fig.canvas.mpl_connect('button_press_event', self.cursor.mouse_click)
 
     # Keep same X-axis coordinates for all subplots
     def ax_update(self, ax):
