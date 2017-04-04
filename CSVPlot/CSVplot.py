@@ -13,9 +13,10 @@ import tkFileDialog
 
 # Matplotlib
 #import matplotlib
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
+
 from cursor import Cursor
 #from cursor import MultiCursor_enhanced
 
@@ -141,7 +142,7 @@ class Application(Frame):
                     # format the x ticks
                     if self.x_value_type == "date":
                         if show_day == True:
-                            format_ticks = mdates.DateFormatter('%H\n%d')
+                            format_ticks = mdates.DateFormatter('%H\n%d %b')
                         else:
                             format_ticks = mdates.DateFormatter('%H')
                         self.subplot[subplot_idx].xaxis.set_major_locator(mdates.HourLocator())
@@ -218,9 +219,11 @@ class Application(Frame):
             # Read Y values and plot
             self.first_y_value = True
             for subplot_idx, y_col in enumerate(self.y_col_to_plot):
+                x_values_local = x_values[:]
                 y_values = []
                 csvfile.seek(0)
                 first_line = True
+                idx = 0
                 for row in reader:
                     if first_line == True:
                         # Avoid first line which can be a title
@@ -230,7 +233,8 @@ class Application(Frame):
                             y_value = float(row[y_col + 1].replace(",", "."))
                         except:
                             self.display("error, not a float value in: " + str(row))
-                            y_values.append(0.0)
+                            # TBD
+                            del x_values_local[idx]
                         else:
                             if y_col == 0:
                                 # First y column has its values starting from origin
@@ -240,11 +244,16 @@ class Application(Frame):
                                     if self.over_24h.get() == True:
                                         y_value -= self.first_y_value
                             y_values.append(y_value)
+                            idx += 1
 
                 if line_on == True:
-                    self.subplot[subplot_idx].plot(x_values, y_values, label=os.path.basename(filename))
+                    self.subplot[subplot_idx].plot(x_values_local, y_values, label=os.path.basename(filename))
                 else:
-                    self.subplot[subplot_idx].plot(x_values, y_values, linestyle='None', marker='o', label=os.path.basename(filename))
+                    self.subplot[subplot_idx].plot(x_values_local, y_values, linestyle='None', marker='o', label=os.path.basename(filename))
+                ## TBD
+                self.subplot[subplot_idx].set_xlim(x_values[0], x_values[-1])
+                y_lim = (-0.5, 1.5)
+                self.subplot[subplot_idx].set_ylim(y_lim)
 
                 # Put a legend on the current axis. Set font size
                 self.subplot[subplot_idx].legend(loc='best', prop={'size': 8})
