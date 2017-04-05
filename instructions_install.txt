@@ -117,3 +117,26 @@ sudo nano /etc/rc.local
 Add line:
 python /home/pi/partage/teleinfo/logger/Teleinfo_Logger.py -o /home/pi/partage/teleinfo/log/log.csv &
 (no need sudo before python because rc.local is executed as root)
+
+*******************************
+https://developer.ibm.com/recipes/tutorials/ti-sensor-tag-and-raspberry-pi/
+
+sudo apt-get install bluetooth bluez
+ 
+sudo hciconfig hci0 up
+ 
+sudo hcitool lescan
+ 
+B0:B4:48:ED:D9:80 CC2650 SensorTag
+
+gatttool --device=B0:B4:48:ED:D9:80 --interactive
+
+[B0:B4:48:ED:D9:80][LE]> connect
+
+
+git clone https://github.com/OrestisEv/SensorTag-Pi3.git
+
+python sensortag.py B0:B4:48:ED:D9:80
+
+
+

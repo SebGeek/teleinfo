@@ -255,13 +255,13 @@ class Application(Frame):
 
                 if line_on == True:
                     linestyle = 'solid'
-                    marker = '.'
+                    marker = 'None'
                 else:
                     linestyle = 'None'
                     marker = 'o'
 
                 if one_plot_per_column == True:
-                    self.subplot[subplot_idx].plot(x_values_local, y_values, linestyle='None', marker=marker, label=os.path.basename(filename))
+                    self.subplot[subplot_idx].plot(x_values_local, y_values, linestyle=linestyle, marker=marker, label=os.path.basename(filename))
                 else:
                     self.subplot[subplot_idx].plot(x_values_local, y_values, linestyle=linestyle, marker=marker, label=list_titles[y_col+1])
 
