@@ -108,11 +108,11 @@ class Application(Frame):
                 last_column_empty = 0
                 if list_titles[-1].strip() == "":
                     last_column_empty = 1
-                nb_col = len(list_titles) - last_column_empty - 1 # do not count the first column (x axis)
 
                 if self.very_first_time == True:
+                    nb_col = len(list_titles) - last_column_empty - 1  # do not count the first column (x axis)
                     self.y_col_to_plot = range(nb_col)
-                #nb_col = len(self.y_col_to_plot)
+                nb_col = len(self.y_col_to_plot)
 
                 if self.x_value_type != "forced":
                     # Detect the type of value in first column (reading second line)
