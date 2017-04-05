@@ -5,6 +5,7 @@ import os
 import csv
 import datetime
 import inspect
+import argparse
 
 # Tkinter
 from Tkinter import *
@@ -12,7 +13,6 @@ import tkMessageBox
 import tkFileDialog
 
 # Matplotlib
-#import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
@@ -20,20 +20,9 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 from cursor import Cursor
 #from cursor import MultiCursor_enhanced
 
-#matplotlib.use('TkAgg')
-
-window_zoomed = False
-
+window_zoomed = True
 cursor_on = False
-line_on = False
 show_day = True
-
-#request_file = True
-request_file = ("/home/obens/_e_sauray/reports/riyadh/TC_results.csv", )
-#request_file = ("../log/Classeur1.csv", )
-#request_file = ("../log/log.csv.2016-11-26", )
-#request_file = ("../log/cpu_end_mem_stats.log", )
-#request_file = ("../log/Dashboard_endur_2015_12_09_01-44-10_max_cpu_load.csv", )
 
 
 class Application(Frame):
@@ -96,6 +85,7 @@ class Application(Frame):
 
     def plot_figure(self):
         first_time = True
+        list_titles = []
         for filename in self.filename_list:
             # Detect delimiter
             csvfile = open(filename, 'rb')
@@ -122,7 +112,7 @@ class Application(Frame):
 
                 if self.very_first_time == True:
                     self.y_col_to_plot = range(nb_col)
-                nb_col = len(self.y_col_to_plot)
+                #nb_col = len(self.y_col_to_plot)
 
                 if self.x_value_type != "forced":
                     # Detect the type of value in first column (reading second line)
@@ -136,46 +126,61 @@ class Application(Frame):
 
                 self.subplot = []
                 for subplot_idx, y_col in enumerate(self.y_col_to_plot):
-                    # (nb_columns, nb_lines, position)
-                    self.subplot.append(self.fig.add_subplot(nb_col, 1, subplot_idx+1))
-
-                    # format the x ticks
-                    if self.x_value_type == "date":
-                        if show_day == True:
-                            format_ticks = mdates.DateFormatter('%H\n%d %b')
+                    if one_plot_per_column == True:
+                        draw_plot = True
+                    else:
+                        if subplot_idx == 0:
+                            nb_col = 1
+                            draw_plot = True
                         else:
-                            format_ticks = mdates.DateFormatter('%H')
-                        self.subplot[subplot_idx].xaxis.set_major_locator(mdates.HourLocator())
-                        self.subplot[subplot_idx].xaxis.set_major_formatter(format_ticks)
+                            draw_plot = False
 
-                    val = list_titles[y_col + 1].decode("utf-8").encode("ascii", "replace")
-                    self.subplot[subplot_idx].set_ylabel(val, fontsize='small')
+                    if draw_plot == True:
+                        # (nb_columns, nb_lines, position)
+                        self.subplot.append(self.fig.add_subplot(nb_col, 1, subplot_idx+1))
 
-                    if self.very_first_time == True:
+                        # format the x ticks
                         if self.x_value_type == "date":
-                            if self.create_menu_over_24h_once == True:
-                                self.create_menu_over_24h_once = False
-                                self.over_24h = BooleanVar()
-                                self.over_24h.set(False)
-                                self.plot_menu.add_checkbutton(label="x-axis over 24h / y-axis offset to 0",
-                                                               variable=self.over_24h, command=self.update_graph)
+                            if show_day == True:
+                                format_ticks = mdates.DateFormatter('%H\n%d\n%b')
+                            else:
+                                format_ticks = mdates.DateFormatter('%H')
+                            self.subplot[subplot_idx].xaxis.set_major_locator(mdates.HourLocator())
+                            self.subplot[subplot_idx].xaxis.set_major_formatter(format_ticks)
 
-                        if self.create_menu_unselect_all_plots_once == True:
-                            self.create_menu_unselect_all_plots_once = False
-                            self.plot_menu.add_command(label="First column is not a X-axis", command=self.first_column_is_not_x_axis)
-                            self.plot_menu.add_separator()
-                            self.plot_menu.add_command(label="Unselect all plots", command=self.unselect_all_plots)
-                            self.plot_menu.add_command(label="Draw plots", command=self.update_graph)
-                            self.plot_menu.add_separator()
+                        if y_range == "0_1":
+                            val = "Boolean"
+                        elif y_range == "percentage":
+                            val = "Percentage"
+                        else:
+                            val = list_titles[y_col + 1].decode("utf-8").encode("ascii", "replace")
+                        self.subplot[subplot_idx].set_ylabel(val, fontsize='small')
 
-                        self.show_subplot_var.append(IntVar())
-                        self.show_subplot_var[-1].set(1)
-                        self.plot_menu.add_checkbutton(label=val, variable=self.show_subplot_var[-1],
-                                                       command=lambda subplot_nb=subplot_idx: self.show_subplot(subplot_nb))
+                        if self.very_first_time == True:
+                            if self.x_value_type == "date":
+                                if self.create_menu_over_24h_once == True:
+                                    self.create_menu_over_24h_once = False
+                                    self.over_24h = BooleanVar()
+                                    self.over_24h.set(False)
+                                    self.plot_menu.add_checkbutton(label="x-axis over 24h / y-axis offset to 0",
+                                                                   variable=self.over_24h, command=self.update_graph)
+
+                            if self.create_menu_unselect_all_plots_once == True:
+                                self.create_menu_unselect_all_plots_once = False
+                                self.plot_menu.add_command(label="First column is not a X-axis", command=self.first_column_is_not_x_axis)
+                                self.plot_menu.add_separator()
+                                self.plot_menu.add_command(label="Unselect all plots", command=self.unselect_all_plots)
+                                self.plot_menu.add_command(label="Draw plots", command=self.update_graph)
+                                self.plot_menu.add_separator()
+
+                            self.show_subplot_var.append(IntVar())
+                            self.show_subplot_var[-1].set(1)
+                            self.plot_menu.add_checkbutton(label=val, variable=self.show_subplot_var[-1],
+                                                           command=lambda subplot_nb=subplot_idx: self.show_subplot(subplot_nb))
                 # Labels
                 plt.xlabel(list_titles[0], fontsize='small')
 
-                plt.subplots_adjust(left=0.08, right=0.99, bottom=0.08, top=0.93, hspace=.15)
+                plt.subplots_adjust(left=0.08, right=0.99, bottom=0.08, top=0.93, hspace=0.15)
 
             self.very_first_time = False
 
@@ -187,7 +192,7 @@ class Application(Frame):
             reader = csv.reader(csvfile, delimiter=delimiter_def)
             for row in reader:
                 if first_line == True:
-                    # Evite la première ligne qui peut être une ligne de titre
+                    # Escape the first line which can be a title line
                     first_line = False
                 else:
                     if self.x_value_type == "date":
@@ -219,6 +224,9 @@ class Application(Frame):
             # Read Y values and plot
             self.first_y_value = True
             for subplot_idx, y_col in enumerate(self.y_col_to_plot):
+                if one_plot_per_column == False:
+                    subplot_idx = 0
+
                 x_values_local = x_values[:]
                 y_values = []
                 csvfile.seek(0)
@@ -232,8 +240,7 @@ class Application(Frame):
                         try:
                             y_value = float(row[y_col + 1].replace(",", "."))
                         except:
-                            self.display("error, not a float value in: " + str(row))
-                            # TBD
+                            #self.display("warning, not a float value in: " + str(row))
                             del x_values_local[idx]
                         else:
                             if y_col == 0:
@@ -247,13 +254,23 @@ class Application(Frame):
                             idx += 1
 
                 if line_on == True:
-                    self.subplot[subplot_idx].plot(x_values_local, y_values, label=os.path.basename(filename))
+                    linestyle = 'solid'
+                    marker = '.'
                 else:
-                    self.subplot[subplot_idx].plot(x_values_local, y_values, linestyle='None', marker='o', label=os.path.basename(filename))
-                ## TBD
-                self.subplot[subplot_idx].set_xlim(x_values[0], x_values[-1])
-                y_lim = (-0.5, 1.5)
-                self.subplot[subplot_idx].set_ylim(y_lim)
+                    linestyle = 'None'
+                    marker = 'o'
+
+                if one_plot_per_column == True:
+                    self.subplot[subplot_idx].plot(x_values_local, y_values, linestyle='None', marker=marker, label=os.path.basename(filename))
+                else:
+                    self.subplot[subplot_idx].plot(x_values_local, y_values, linestyle=linestyle, marker=marker, label=list_titles[y_col+1])
+
+                if y_range == "0_1":
+                    y_lim = (-0.5, 1.5)  # For boolean
+                    self.subplot[subplot_idx].set_ylim(y_lim)
+                elif y_range == "percentage":
+                    y_lim = (0.0, 100.0)
+                    self.subplot[subplot_idx].set_ylim(y_lim)
 
                 # Put a legend on the current axis. Set font size
                 self.subplot[subplot_idx].legend(loc='best', prop={'size': 8})
@@ -367,8 +384,35 @@ A venir:
 - Use mouse middle button for a second cursor to show difference (ligne oblique)
 ''')
 
+def str2bool(string):
+    return string.lower() in ("yes", "true", "y", "1")
 
 if __name__ == '__main__':
+
+    # read arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-f", "--file", required=False, help="CSV file to plot", type=str, default=None)
+    parser.add_argument("-l", "--line_on", required=False, help="Use line between points", type=str, default="yes")
+    parser.add_argument("-y", "--y_range", required=False, help="Force Y axis range in 'percentage' or '0_1'", type=str, default=None)
+    parser.add_argument("-o", "--one_plot_per_column", required=False, help="One plot per column in the CSV file", type=str, default="yes")
+    args = parser.parse_args()
+
+    if args.file != None:
+        request_file = (args.file, )
+    else:
+        request_file = True
+        #request_file = ("../log/Classeur1.csv", )
+        #request_file = ("../log/log.csv.2016-11-26", )
+        #request_file = ("../log/Dashboard_endur_2015_12_09_01-44-10_max_cpu_load.csv", )
+
+    line_on = str2bool(args.line_on)
+
+    y_range = args.y_range
+
+    one_plot_per_column = str2bool(args.one_plot_per_column)
+
+    print (line_on, y_range, one_plot_per_column)
+
     root_window = Tk()
     if window_zoomed == True:
         if os.name == "posix":
