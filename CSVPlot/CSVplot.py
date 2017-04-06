@@ -6,6 +6,7 @@ import csv
 import datetime
 import inspect
 import argparse
+import itertools
 
 # Tkinter
 from Tkinter import *
@@ -24,6 +25,7 @@ window_zoomed = True
 cursor_on = False
 show_day = True
 
+list_marker = itertools.cycle(('s', 'o', '*', 'D', 'H', 'X'))
 
 class Application(Frame):
     def __init__(self, root, title):
@@ -258,7 +260,7 @@ class Application(Frame):
                     marker = 'None'
                 else:
                     linestyle = 'None'
-                    marker = 'o'
+                    marker = list_marker.next()
 
                 if one_plot_per_column == True:
                     self.subplot[subplot_idx].plot(x_values_local, y_values, linestyle=linestyle, marker=marker, label=os.path.basename(filename))
