@@ -411,8 +411,6 @@ if __name__ == '__main__':
 
     one_plot_per_column = str2bool(args.one_plot_per_column)
 
-    print (line_on, y_range, one_plot_per_column)
-
     root_window = Tk()
     if window_zoomed == True:
         if os.name == "posix":
