@@ -21,10 +21,6 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 from cursor import Cursor
 #from cursor import MultiCursor_enhanced
 
-window_zoomed = True
-cursor_on = False
-show_day = True
-
 list_marker = itertools.cycle(('s', 'o', '*', 'D', 'H', 'X'))
 
 class Application(Frame):
@@ -143,12 +139,12 @@ class Application(Frame):
 
                         # format the x ticks
                         if self.x_value_type == "date":
-                            if show_day == True:
-                                format_ticks = mdates.DateFormatter('%H\n%d\n%b')
-                            else:
-                                format_ticks = mdates.DateFormatter('%H')
+                            format_major_ticks = mdates.DateFormatter('%H')
                             self.subplot[subplot_idx].xaxis.set_major_locator(mdates.HourLocator())
-                            self.subplot[subplot_idx].xaxis.set_major_formatter(format_ticks)
+                            self.subplot[subplot_idx].xaxis.set_major_formatter(format_major_ticks)
+                            format_minor_ticks = mdates.DateFormatter('\n%d %b')
+                            self.subplot[subplot_idx].xaxis.set_minor_locator(mdates.DayLocator())
+                            self.subplot[subplot_idx].xaxis.set_minor_formatter(format_minor_ticks)
 
                         if y_range == "0_1":
                             val = "Boolean"
@@ -281,6 +277,8 @@ class Application(Frame):
                     tick.label.set_fontsize(8)
                 for tick in self.subplot[subplot_idx].yaxis.get_major_ticks():
                     tick.label.set_fontsize(8)
+                for tick in self.subplot[subplot_idx].xaxis.get_minor_ticks():
+                    tick.label.set_fontsize(8)
 
                 # Detect if user has zoomed on a plot
                 self.subplot[subplot_idx].callbacks.connect('xlim_changed', self.ax_update)
@@ -393,37 +391,48 @@ if __name__ == '__main__':
 
     # read arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument("-f", "--file", required=False, help="CSV file to plot", type=str, default=None)
-    parser.add_argument("-l", "--line_on", required=False, help="Use line between points", type=str, default="yes")
-    parser.add_argument("-y", "--y_range", required=False, help="Force Y axis range in 'percentage' or '0_1'", type=str, default=None)
-    parser.add_argument("-o", "--one_plot_per_column", required=False, help="One plot per column in the CSV file", type=str, default="yes")
+    parser.add_argument("-f", "--file",                required=False, help="CSV file to plot",                            type=str, default=None)
+    parser.add_argument("-l", "--line_on",             required=False, help="Use line between points",                     type=str, default="yes")
+    parser.add_argument("-y", "--y_range",             required=False, help="Force Y axis range in 'percentage' or '0_1'", type=str, default=None)
+    parser.add_argument("-o", "--one_plot_per_column", required=False, help="One plot per column in the CSV file",         type=str, default="yes")
     args = parser.parse_args()
 
     if args.file != None:
         request_file = (args.file, )
     else:
         request_file = True
-        #request_file = ("../log/Classeur1.csv", )
         #request_file = ("../log/log.csv.2016-11-26", )
-        #request_file = ("../log/Dashboard_endur_2015_12_09_01-44-10_max_cpu_load.csv", )
 
     line_on = str2bool(args.line_on)
+    #line_on = False
 
     y_range = args.y_range
+    #y_range = "0_1"
 
     one_plot_per_column = str2bool(args.one_plot_per_column)
+    #one_plot_per_column = False
 
-    root_window = Tk()
+    window_zoomed = False
+
+    cursor_on = False
+
+    root = Tk()
     if window_zoomed == True:
         if os.name == "posix":
-            w, h = root_window.winfo_screenwidth(), root_window.winfo_screenheight()
-            root_window.geometry("%dx%d+0+0" % (w, h))
+            w, h = root.winfo_screenwidth(), root.winfo_screenheight()
+            root.geometry("%dx%d+0+0" % (w, h))
         else:
-            root_window.state('zoomed')
+            root.state('zoomed')
     else:
-        root_window.geometry("800x600")
+        root.geometry("800x600")
 
-    app = Application(root_window, title="CSV Plot")
+    if os.name == "posix":
+        current_dir = os.path.dirname(os.path.realpath(__file__))
+        icon_path = os.path.join(current_dir, 'CSVplot.gif')
+        img = PhotoImage(file=icon_path)
+        root.tk.call('wm', 'iconphoto', root._w, img)
+
+    app = Application(root, title="CSV Plot")
 
     if not os.name == "posix":
         if os.path.exists('CSVplot.ico'):
