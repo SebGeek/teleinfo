@@ -365,23 +365,23 @@ class Application(Frame):
 
     @staticmethod
     def about_command():
-        tkMessageBox.showinfo("A propos", '''
+        tkMessageBox.showinfo("About", '''
         CSV plotter
 
-Auteur: S. Auray - Version du 18/01/2017
+Author: S. Auray - 2017/04/11
 
-Fonctions:
+Functions:
 - Compatible Linux & Windows
-- Ouverture de plusieurs fichiers à la fois
-- Détection du type de séparateur dans le fichier
-- Gère première colonne en format date si respecte "%Y-%m-%d %H:%M:%S.%f"
-  sinon utilise en flottant
-  sinon possibilité d'utiliser "First column is not X-axis"
+- Open several files at once
+- Detect type of separator in the file
+- Read the dates in first column if formatted as "%Y-%m-%d %H:%M:%S.%f"
+  Else read it as flottant
+  Else it is possible to use "First column is not X-axis" (consider X-axis as an enumeration)
 
-A venir:
-- zoom sans changer l'echelle des Y
-- curseur sur les graphs
-- Use key 'c' to activate cursor
+TBD:
+- cursor on all graphs
+- Menu command to activate cursor
+- zoom without changing Y scale
 - Use mouse middle button for a second cursor to show difference (ligne oblique)
 ''')
 
