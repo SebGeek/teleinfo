@@ -21,7 +21,8 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 from cursor import Cursor
 #from cursor import MultiCursor_enhanced
 
-list_marker = itertools.cycle(('s', 'o', '*', 'D', 'H', 'X'))
+list_linestyle = itertools.cycle(('solid', 'dotted', 'dashed', 'dashdot'))
+list_marker    = itertools.cycle(('s', 'o', '*', 'D', 'H', 'X'))
 
 class Application(Frame):
     def __init__(self, root, title):
@@ -252,7 +253,7 @@ class Application(Frame):
                             idx += 1
 
                 if line_on == True:
-                    linestyle = 'solid'
+                    linestyle = list_linestyle.next()
                     marker = 'None'
                 else:
                     linestyle = 'None'
