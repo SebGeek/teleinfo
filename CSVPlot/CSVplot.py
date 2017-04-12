@@ -335,6 +335,7 @@ class Application(Frame):
         # Redraw window graphics
         self.canvas.draw()
         self.update()
+        plt.savefig(self.filename_list[0] + '.png', dpi=200, bbox_inches='tight')
 
     def show_filename(self, file_name):
         if self.show_filename_var[file_name].get() == 0:
@@ -413,7 +414,7 @@ if __name__ == '__main__':
     one_plot_per_column = str2bool(args.one_plot_per_column)
     #one_plot_per_column = False
 
-    window_zoomed = False
+    window_zoomed = True
 
     cursor_on = False
 
