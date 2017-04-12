@@ -7,7 +7,7 @@ import matplotlib.dates as mdates
 
 #from matplotlib.widgets import Widget
 
-matplotlib.use('TkAgg')
+#matplotlib.use('TkAgg')
 
 # - gestion sur plusieurs graphes
 # - barre verticale sur tous les graphes
