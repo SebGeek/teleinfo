@@ -336,6 +336,8 @@ class Application(Frame):
         self.canvas.draw()
         self.update()
         plt.savefig(self.filename_list[0] + '.png', dpi=200, bbox_inches='tight')
+        if quit_auto == True:
+            self.quit()
 
     def show_filename(self, file_name):
         if self.show_filename_var[file_name].get() == 0:
@@ -393,10 +395,21 @@ if __name__ == '__main__':
 
     # read arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument("-f", "--file",                required=False, help="CSV file to plot",                            type=str, default=None)
-    parser.add_argument("-l", "--line_on",             required=False, help="Use line between points",                     type=str, default="yes")
-    parser.add_argument("-y", "--y_range",             required=False, help="Force Y axis range in 'percentage' or '0_1'", type=str, default=None)
-    parser.add_argument("-o", "--one_plot_per_column", required=False, help="One plot per column in the CSV file",         type=str, default="yes")
+    parser.add_argument("-f", "--file",    help="CSV file to plot ('path to file')",
+                        required=False, type=str, default=None)
+
+    parser.add_argument("-l", "--line_on", help="Use line between points ('yes' or 'no')",
+                        required=False, type=str, default="yes")
+
+    parser.add_argument("-y", "--y_range", help="Force Y axis range as percentage or boolean ('percentage' or '0_1')",
+                        required=False, type=str, default=None)
+
+    parser.add_argument("-o", "--one_plot_per_column", help="One plot per column in the CSV file ('yes' or 'no')",
+                        required=False, type=str, default="yes")
+
+    parser.add_argument("-q", "--quit_auto", help="Quit just after having plot and saved the figure ('yes' or 'no')",
+                        required=False, type=str, default="no")
+
     args = parser.parse_args()
 
     if args.file != None:
@@ -406,13 +419,12 @@ if __name__ == '__main__':
         #request_file = ("../log/log.csv.2016-11-26", )
 
     line_on = str2bool(args.line_on)
-    #line_on = False
 
     y_range = args.y_range
-    #y_range = "0_1"
 
     one_plot_per_column = str2bool(args.one_plot_per_column)
-    #one_plot_per_column = False
+
+    quit_auto = str2bool(args.quit_auto)
 
     window_zoomed = True
 
