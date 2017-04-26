@@ -185,7 +185,7 @@ if __name__ == "__main__":
     # Can enable debug output by uncommenting:
     import logging
 
-    logging.basicConfig(level=logging.DEBUG)
+    #logging.basicConfig(level=logging.DEBUG)
 
     # Default constructor will pick a default I2C bus.
     #
@@ -207,10 +207,10 @@ if __name__ == "__main__":
     # sensor = BMP085.BMP085(mode=BMP085.BMP085_ULTRAHIGHRES)
 
     raw_val = sensor.read_chip_id()
-    print('Chip Id 0x{0:X} ({1})'.format(raw_val & 0xFFFF, raw_val))
+    #print('Chip Id 0x{0:X} ({1})'.format(raw_val & 0xFFFF, raw_val))
     raw_val = sensor.read_raw_temperature()
     temperature = sensor.compensate_temperature(raw_val)
-    print (temperature)
+    print str(temperature) + "°C"
 
     pressure = sensor.read_raw_pressure()
-    print (pressure)
+    print str(pressure) + "hPa"
