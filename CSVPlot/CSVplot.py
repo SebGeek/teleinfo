@@ -268,7 +268,7 @@ class Application(Frame):
                     y_lim = (-0.5, 1.5)  # For boolean
                     self.subplot[subplot_idx].set_ylim(y_lim)
                 elif y_range == "percentage":
-                    y_lim = (0.0, 100.0)
+                    y_lim = (-1.0, 101.0) # add 1.0 to see the plot line when it is horizontal (over 0.0 or 100.0 axis)
                     self.subplot[subplot_idx].set_ylim(y_lim)
 
                 # Put a legend on the current axis. Set font size
