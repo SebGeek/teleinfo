@@ -63,6 +63,7 @@ class Teleinfo(threading.Thread):
         self.list_of_tags_to_read_values = list_of_tags_to_read_values
 
         # Open Teleinfo modem
+        self._ser = None
         self.open()
 
         self.RqTerminate  = False
@@ -73,7 +74,6 @@ class Teleinfo(threading.Thread):
         """
         open teleinfo modem device
         """
-        self._ser = None
         try:
             self.logger.info("Try to open Teleinfo modem '%s'" % self._device)
             self._ser = serial.Serial(self._device, 1200, bytesize=7, parity='E', stopbits=1)
