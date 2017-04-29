@@ -53,7 +53,7 @@ class SensorTag:
 
     def read_temp(self):
         raw_temp_data = self.char_read_hnd(0x24)
-        print "raw_temp=" + raw_temp_data
+        #print "raw_temp=" + raw_temp_data
         raw_temp_bytes = raw_temp_data.split()
 
         objT = int('0x' + raw_temp_bytes[-3] + raw_temp_bytes[-4], 16)
@@ -69,7 +69,7 @@ class SensorTag:
 
     def read_humidity(self):
         raw_temp_data = self.char_read_hnd(0x2C)
-        print "raw_humidity=" + raw_temp_data
+        #print "raw_humidity=" + raw_temp_data
         raw_temp_bytes = raw_temp_data.split()
 
         rawT = int('0x' + raw_temp_bytes[-3] + raw_temp_bytes[-4], 16)
@@ -85,7 +85,7 @@ class SensorTag:
 
     def read_barometer(self):
         raw_temp_data = self.char_read_hnd(0x34)
-        print "raw_humidity=" + raw_temp_data
+        #print "raw_humidity=" + raw_temp_data
         raw_temp_bytes = raw_temp_data.split()
 
         rawT = int('0x' + raw_temp_bytes[-4] + raw_temp_bytes[-5] + raw_temp_bytes[-6], 16)
