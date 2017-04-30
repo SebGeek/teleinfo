@@ -37,6 +37,8 @@ import datetime
 import threading
 import time
 
+from sensor_tag import SensorTag
+
 # Device name
 gDeviceName = '/dev/ttyAMA0'
 
@@ -269,7 +271,7 @@ if __name__ == "__main__":
         index_HP_offset = 0.0
 
         # Header
-        header_line = "Date/Heure;Prix (euros TTC);Puissance apparente (V.A);Periode tarifaire (HC=0, HP=1)"
+        header_line = "Date;Price € TTC;Apparent power V.A;Price period (HC=0, HP=1);Temperature °C;Hygrometry %;Pressure hPa;Battery %"
         line_val.info(header_line)
         fh_csv.configureHeaderWriter(header_line, line_val)
 

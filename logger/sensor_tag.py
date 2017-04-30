@@ -99,22 +99,34 @@ class SensorTag:
         return t, p  # temperature in °C, pressure in hPa
 
 
+    def read_battery_level(self):
+        raw_batt_level = self.char_read_hnd(0x1E)
+        #print "raw_batt_level=" + raw_batt_level
+        raw_batt_bytes = raw_batt_level.split()
+
+        batt_level = int('0x' + raw_batt_bytes[-1], 16)
+
+        return batt_level  # battery level in %
+
 if __name__ == "__main__":
     obj_sensor = SensorTag(SENSORTAG_BLE_ADDRESS)
 
-    print "IR temperature sensor"
+    print "** Battery level"
+    print "battery " + str(obj_sensor.read_battery_level())
+
+    print "** IR temperature sensor"
     obj_sensor.activate_temp(1)
     print "temp " + str(obj_sensor.read_temp()[1])
     obj_sensor.activate_temp(0)
 
-    print "Hygrometry/temperature sensor"
+    print "** Hygrometry/temperature sensor"
     obj_sensor.activate_humidity(1)
     t, rh = obj_sensor.read_humidity()
     print "temp " + str(t)
     print "humidity " + str(rh)
     obj_sensor.activate_humidity(0)
 
-    print "Barometer/temperature sensor"
+    print "** Barometer/temperature sensor"
     obj_sensor.activate_barometer(1)
     t, p = obj_sensor.read_barometer()
     print "temp " + str(t)
