@@ -26,6 +26,8 @@ char-read-hnd 0x002C
 
 '''
 
+SENSORTAG_BLE_ADDRESS = "B0:B4:48:ED:D9:80"
+
 class SensorTag:
     def __init__(self, bluetooth_adr):
         self.con = pexpect.spawn('gatttool -b ' + bluetooth_adr + ' --interactive')
@@ -96,20 +98,25 @@ class SensorTag:
 
         return t, p  # temperature in °C, pressure in hPa
 
-obj_sensor = SensorTag("B0:B4:48:ED:D9:80")
 
-# obj_sensor.activate_temp(1)
-# print "temp " + str(obj_sensor.read_temp()[1])
-# obj_sensor.activate_temp(0)
+if __name__ == "__main__":
+    obj_sensor = SensorTag(SENSORTAG_BLE_ADDRESS)
 
-obj_sensor.activate_humidity(1)
-t, rh = obj_sensor.read_humidity()
-print "temp " + str(t)
-print "humidity " + str(rh)
-obj_sensor.activate_humidity(0)
+    print "IR temperature sensor"
+    obj_sensor.activate_temp(1)
+    print "temp " + str(obj_sensor.read_temp()[1])
+    obj_sensor.activate_temp(0)
 
-obj_sensor.activate_barometer(1)
-t, p = obj_sensor.read_barometer()
-print "temp " + str(t)
-print "pressure " + str(p)
-obj_sensor.activate_barometer(0)
+    print "Hygrometry/temperature sensor"
+    obj_sensor.activate_humidity(1)
+    t, rh = obj_sensor.read_humidity()
+    print "temp " + str(t)
+    print "humidity " + str(rh)
+    obj_sensor.activate_humidity(0)
+
+    print "Barometer/temperature sensor"
+    obj_sensor.activate_barometer(1)
+    t, p = obj_sensor.read_barometer()
+    print "temp " + str(t)
+    print "pressure " + str(p)
+    obj_sensor.activate_barometer(0)
