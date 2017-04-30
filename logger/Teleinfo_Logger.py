@@ -47,6 +47,7 @@ period   = 30              # période de mesure en secondes
 prix_HC  = 0.0638 * 1.2    # prix HC TTC pour 1 kWh (TVA à 20%, voir facture du 3/2/2016)
 prix_HP  = 0.1043 * 1.2    # prix HP TTC
 
+SENSORTAG_BLE_ADDRESS = "B0:B4:48:ED:D9:80"
 
 # Global variable shared with the thread
 last_frame_read = {"HCHC": 0, "HCHP": 0, "PTEC": "xx", "PAPP": 0}
@@ -298,7 +299,26 @@ if __name__ == "__main__":
 
                 puissance_apparente = int(last_frame_read["PAPP"])
 
-                line_val.info(str(date) + ";" + str(prix) + ";" + str(puissance_apparente) + ";" + str(periode_tarifaire))
+                obj_sensor = SensorTag()
+                status = obj_sensor.connection(SENSORTAG_BLE_ADDRESS)
+                if status == True:
+                    battery = obj_sensor.read_battery_level()
+
+                    obj_sensor.activate_humidity(1)
+                    temp, hygro = obj_sensor.read_humidity()
+                    obj_sensor.activate_humidity(0)
+
+                    obj_sensor.activate_barometer(1)
+                    _temp, pressure = obj_sensor.read_barometer()
+                    obj_sensor.activate_barometer(0)
+                else:
+                    temp = 0.0
+                    hygro = 0.0
+                    pressure = 0.0
+                    battery = 0
+
+                line_val.info(str(date) + ";" + str(round(prix, 2)) + ";" + str(puissance_apparente) + ";" + str(periode_tarifaire)
+                              + ";" + str(round(temp, 1)) + ";" + str(int(hygro)) + ";" + str(int(pressure)) + ";" + str(battery))
 
                 previoustime += period
 

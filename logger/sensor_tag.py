@@ -29,13 +29,22 @@ char-read-hnd 0x002C
 SENSORTAG_BLE_ADDRESS = "B0:B4:48:ED:D9:80"
 
 class SensorTag:
-    def __init__(self, bluetooth_adr):
-        self.con = pexpect.spawn('gatttool -b ' + bluetooth_adr + ' --interactive')
-        self.con.expect('\[LE\]>', timeout=600)
+    def __init__(self):
+        self.con = None
 
-        #print "Preparing to connect. You might need to press the power button..."
-        self.con.sendline('connect')
-        self.con.expect('Connection successful.*\[LE\]>')
+    def connection(self, bluetooth_adr):
+        self.con = pexpect.spawn('gatttool -b ' + bluetooth_adr + ' --interactive')
+        try:
+            self.con.expect('\[LE\]>', timeout=5)
+
+            #print "Preparing to connect. You might need to press the power button..."
+            self.con.sendline('connect')
+            self.con.expect('Connection successful.*\[LE\]>', timeout=5)
+            connection_status = True
+        except:
+            connection_status = False
+
+        return connection_status
 
     def char_write_cmd(self, handle, value):
         # The 0%x for value is VERY naughty!  Fix this!
@@ -55,13 +64,13 @@ class SensorTag:
         time.sleep(0.5)
 
     def read_temp(self):
-        raw_temp_data = self.char_read_hnd(0x24)
-        #print "raw_temp=" + raw_temp_data
-        raw_temp_bytes = raw_temp_data.split()
+        raw_data = self.char_read_hnd(0x24)
+        #print "raw=" + raw_data
+        raw_bytes = raw_data.split()
 
-        objT = int('0x' + raw_temp_bytes[-3] + raw_temp_bytes[-4], 16)
+        objT = int('0x' + raw_bytes[-3] + raw_bytes[-4], 16)
         objT = objT / 4.0 * 0.03125
-        ambT = int('0x' + raw_temp_bytes[-1] + raw_temp_bytes[-2], 16)
+        ambT = int('0x' + raw_bytes[-1] + raw_bytes[-2], 16)
         ambT = ambT / 4.0 * 0.03125
 
         return objT, ambT # object temperature in °C, ambient temperature in °C
@@ -71,12 +80,12 @@ class SensorTag:
         time.sleep(0.2)
 
     def read_humidity(self):
-        raw_temp_data = self.char_read_hnd(0x2C)
-        #print "raw_humidity=" + raw_temp_data
-        raw_temp_bytes = raw_temp_data.split()
+        raw_data = self.char_read_hnd(0x2C)
+        #print "raw_humidity=" + raw_data
+        raw_bytes = raw_data.split()
 
-        rawT = int('0x' + raw_temp_bytes[-3] + raw_temp_bytes[-4], 16)
-        rawH = int('0x' + raw_temp_bytes[-1] + raw_temp_bytes[-2], 16)
+        rawT = int('0x' + raw_bytes[-3] + raw_bytes[-4], 16)
+        rawH = int('0x' + raw_bytes[-1] + raw_bytes[-2], 16)
         t  = (rawT / 65536.0) * 165.0 - 40.0
         rh = (rawH / 65536.0) * 100.0
 
@@ -87,12 +96,12 @@ class SensorTag:
         time.sleep(0.2)
 
     def read_barometer(self):
-        raw_temp_data = self.char_read_hnd(0x34)
-        #print "raw_humidity=" + raw_temp_data
-        raw_temp_bytes = raw_temp_data.split()
+        raw_data = self.char_read_hnd(0x34)
+        #print "raw_humidity=" + raw_data
+        raw_bytes = raw_data.split()
 
-        rawT = int('0x' + raw_temp_bytes[-4] + raw_temp_bytes[-5] + raw_temp_bytes[-6], 16)
-        rawP = int('0x' + raw_temp_bytes[-1] + raw_temp_bytes[-2] + raw_temp_bytes[-3], 16)
+        rawT = int('0x' + raw_bytes[-4] + raw_bytes[-5] + raw_bytes[-6], 16)
+        rawP = int('0x' + raw_bytes[-1] + raw_bytes[-2] + raw_bytes[-3], 16)
         t = rawT / 100.0
         p = rawP / 100.0
 
@@ -109,26 +118,30 @@ class SensorTag:
         return batt_level  # battery level in %
 
 if __name__ == "__main__":
-    obj_sensor = SensorTag(SENSORTAG_BLE_ADDRESS)
+    obj_sensor = SensorTag()
 
-    print "** Battery level"
-    print "battery " + str(obj_sensor.read_battery_level())
+    status = obj_sensor.connection(SENSORTAG_BLE_ADDRESS)
+    print "** Connection status " + str(status)
 
-    print "** IR temperature sensor"
-    obj_sensor.activate_temp(1)
-    print "temp " + str(obj_sensor.read_temp()[1])
-    obj_sensor.activate_temp(0)
+    if status == True:
+        print "** Battery level"
+        print "battery " + str(obj_sensor.read_battery_level())
 
-    print "** Hygrometry/temperature sensor"
-    obj_sensor.activate_humidity(1)
-    t, rh = obj_sensor.read_humidity()
-    print "temp " + str(t)
-    print "humidity " + str(rh)
-    obj_sensor.activate_humidity(0)
+        print "** IR temperature sensor"
+        obj_sensor.activate_temp(1)
+        print "temp " + str(obj_sensor.read_temp()[1])
+        obj_sensor.activate_temp(0)
 
-    print "** Barometer/temperature sensor"
-    obj_sensor.activate_barometer(1)
-    t, p = obj_sensor.read_barometer()
-    print "temp " + str(t)
-    print "pressure " + str(p)
-    obj_sensor.activate_barometer(0)
+        print "** Hygrometry/temperature sensor"
+        obj_sensor.activate_humidity(1)
+        t, rh = obj_sensor.read_humidity()
+        print "temp " + str(round(t, 1))
+        print "humidity " + str(int(rh))
+        obj_sensor.activate_humidity(0)
+
+        print "** Barometer/temperature sensor"
+        obj_sensor.activate_barometer(1)
+        t, p = obj_sensor.read_barometer()
+        print "temp " + str(t)
+        print "pressure " + str(p)
+        obj_sensor.activate_barometer(0)
