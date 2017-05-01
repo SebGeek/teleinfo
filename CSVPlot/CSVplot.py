@@ -253,11 +253,17 @@ class Application(Frame):
                             idx += 1
 
                 if line_on == True:
-                    linestyle = list_linestyle.next()
+                    if cyclic_style == True:
+                        linestyle = list_linestyle.next()
+                    else:
+                        linestyle = 'solid'
                     marker = 'None'
                 else:
+                    if cyclic_style == True:
+                        marker = list_marker.next()
+                    else:
+                        marker = 's'
                     linestyle = 'None'
-                    marker = list_marker.next()
 
                 if one_plot_per_column == True:
                     self.subplot[subplot_idx].plot(x_values_local, y_values, linestyle=linestyle, marker=marker, label=os.path.basename(filename))
@@ -335,8 +341,8 @@ class Application(Frame):
         # Redraw window graphics
         self.canvas.draw()
         self.update()
-        plt.savefig(self.filename_list[0] + '.png', dpi=200, bbox_inches='tight')
         if quit_auto == True:
+            plt.savefig(self.filename_list[0] + '.png', dpi=200, bbox_inches='tight')
             self.quit()
 
     def show_filename(self, file_name):
@@ -392,7 +398,6 @@ def str2bool(string):
     return string.lower() in ("yes", "true", "y", "1")
 
 if __name__ == '__main__':
-
     # read arguments
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", "--file",    help="CSV file to plot ('path to file')",
@@ -400,6 +405,9 @@ if __name__ == '__main__':
 
     parser.add_argument("-l", "--line_on", help="Use line between points ('yes' or 'no')",
                         required=False, type=str, default="yes")
+
+    parser.add_argument("-c", "--cyclic_style", help="Cyclic line/marker style ('yes' or 'no')",
+                        required=False, type=str, default="no")
 
     parser.add_argument("-y", "--y_range", help="Force Y axis range as percentage or boolean ('percentage' or '0_1')",
                         required=False, type=str, default=None)
@@ -411,23 +419,18 @@ if __name__ == '__main__':
                         required=False, type=str, default="no")
 
     args = parser.parse_args()
-
     if args.file != None:
         request_file = (args.file, )
     else:
         request_file = True
         #request_file = ("../log/log.csv.2016-11-26", )
-
     line_on = str2bool(args.line_on)
-
+    cyclic_style = str2bool(args.cyclic_style)
     y_range = args.y_range
-
     one_plot_per_column = str2bool(args.one_plot_per_column)
-
     quit_auto = str2bool(args.quit_auto)
 
     window_zoomed = True
-
     cursor_on = False
 
     root = Tk()
@@ -448,7 +451,7 @@ if __name__ == '__main__':
 
     app = Application(root, title="CSV Plot")
 
-    if not os.name == "posix":
+    if os.name != "posix":
         if os.path.exists('CSVplot.ico'):
             app.winfo_toplevel().iconbitmap('CSVplot.ico')
     app.mainloop()
