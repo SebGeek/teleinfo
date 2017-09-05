@@ -47,7 +47,7 @@ sudo nano /etc/samba/smb.conf
 <<
 [global]
 workgroup = WORKGROUP
-server string = Raspberry Pi 2
+server string = Raspberry Pi 0
 netbios name = TeleInfo
 dns proxy = no
 acl allow execute always = True
@@ -97,7 +97,8 @@ tmpfs    /var/log    tmpfs    defaults,noatime,nosuid,mode=0755,size=10m    0 0
 - sudo nano /etc/rc.local
     Dans le fichier, juste avant exit 0, il faut ajouter la ligne suivante:
         stty -F /dev/ttyAMA0 1200 sane evenp parenb cs7 -crtscts
-
+        1200 bauds, data 7 bits, 1 even bit, 1 stop bit
+        
 * install screen
 sudo apt-get install screen
 
