@@ -93,12 +93,13 @@ tmpfs    /var/log    tmpfs    defaults,noatime,nosuid,mode=0755,size=10m    0 0
     dwc_otg.lpm_enable=0 console=tty1 root=/dev/mmcblk0p2 rootfstype=ext4 elevator=deadline fsck.repair=yes rootwait
 - sudo nano /boot/config.txt
     enable_uart=1
-- si besoin: sudo systemctl mask serial-getty@ttyAMA0.service
+    dtoverlay=pi3-disable-bt
+- sudo systemctl disable bluetooth.service
 - sudo nano /etc/rc.local
-    Dans le fichier, juste avant exit 0, il faut ajouter la ligne suivante:
-        stty -F /dev/ttyAMA0 1200 sane evenp parenb cs7 -crtscts
-        1200 bauds, data 7 bits, 1 even bit, 1 stop bit
-        
+    Add in the file just before "exit 0":
+    stty -F /dev/ttyAMA0 1200 sane evenp parenb cs7 -crtscts
+    To configure the serial link to 1200 bauds, data 7 bits, 1 even bit, 1 stop bit
+
 * install screen
 sudo apt-get install screen
 
