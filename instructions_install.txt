@@ -109,8 +109,12 @@ sudo apt-get install python-pip
 * install serial
 sudo python -m pip install pyserial
 
-* install Bluetooth Low Energy stack
+* install Bluetooth Low Energy stack (for SensorTag)
 sudo apt-get install bluetooth bluez
+
+* install pyGithub
+pip install pyGithub
+    note: in case of error "IOError: [Errno 28] No space left on device", type before: sudo umount /tmp
 
 * MANUAL start-up of teleinfo looger
 screen

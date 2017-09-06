@@ -38,9 +38,13 @@ import threading
 import time
 
 use_sensor_tag = False
+use_github = True
 
 if use_sensor_tag:
     from sensor_tag import SensorTag
+
+if use_github:
+    from github import Github
 
 # Device name
 gDeviceName = '/dev/ttyAMA0'
@@ -209,6 +213,13 @@ class MyTimedRotatingFileHandler(logging.handlers.TimedRotatingFileHandler):
     def configureHeaderWriter(self, header, log):
         self._header = header
         self._log = log
+
+    def emit(self, record):
+        # repo = Github("SebGeek", "MonTele12").get_user().get_repo("teleinfo")
+        # fd = open("../log/log.csv.2016-11-21", "r")
+        # repo.create_file("/log/new_file2.txt", "add log", fd.read())
+
+        return logging.handlers.TimedRotatingFileHandler.emit(self, record)
 
 
 if __name__ == "__main__":
