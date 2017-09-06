@@ -37,7 +37,10 @@ import datetime
 import threading
 import time
 
-from sensor_tag import SensorTag
+use_sensor_tag = False
+
+if use_sensor_tag:
+    from sensor_tag import SensorTag
 
 # Device name
 gDeviceName = '/dev/ttyAMA0'
@@ -47,7 +50,8 @@ period   = 30              # période de mesure en secondes
 prix_HC  = 0.0638 * 1.2    # prix HC TTC pour 1 kWh (TVA à 20%, voir facture du 3/2/2016)
 prix_HP  = 0.1043 * 1.2    # prix HP TTC
 
-SENSORTAG_BLE_ADDRESS = "B0:B4:48:ED:D9:80"
+if use_sensor_tag:
+    SENSORTAG_BLE_ADDRESS = "B0:B4:48:ED:D9:80"
 
 # Global variable shared with the thread
 last_frame_read = {"HCHC": 0, "HCHP": 0, "PTEC": "xx", "PAPP": 0}
@@ -272,7 +276,9 @@ if __name__ == "__main__":
         index_HP_offset = 0.0
 
         # Header
-        header_line = "Date;Price € TTC;Apparent power V.A;Price period (HC=0, HP=1);Temperature °C;Hygrometry %;Pressure hPa;Battery %"
+        header_line = "Date;Price € TTC;Apparent power V.A;Price period (HC=0, HP=1)"
+        if use_sensor_tag:
+            header_line += ";Temperature °C;Hygrometry %;Pressure hPa;Battery %"
         line_val.info(header_line)
         fh_csv.configureHeaderWriter(header_line, line_val)
 
@@ -299,26 +305,29 @@ if __name__ == "__main__":
 
                 puissance_apparente = int(last_frame_read["PAPP"])
 
-                obj_sensor = SensorTag()
-                status = obj_sensor.connection(SENSORTAG_BLE_ADDRESS)
-                if status == True:
-                    battery = obj_sensor.read_battery_level()
+                if use_sensor_tag:
+                    obj_sensor = SensorTag()
+                    status = obj_sensor.connection(SENSORTAG_BLE_ADDRESS)
+                    if status == True:
+                        battery = obj_sensor.read_battery_level()
 
-                    obj_sensor.activate_humidity(1)
-                    temp, hygro = obj_sensor.read_humidity()
-                    obj_sensor.activate_humidity(0)
+                        obj_sensor.activate_humidity(1)
+                        temp, hygro = obj_sensor.read_humidity()
+                        obj_sensor.activate_humidity(0)
 
-                    obj_sensor.activate_barometer(1)
-                    _temp, pressure = obj_sensor.read_barometer()
-                    obj_sensor.activate_barometer(0)
-                else:
-                    temp = 0.0
-                    hygro = 0.0
-                    pressure = 0.0
-                    battery = 0
+                        obj_sensor.activate_barometer(1)
+                        _temp, pressure = obj_sensor.read_barometer()
+                        obj_sensor.activate_barometer(0)
+                    else:
+                        temp = 0.0
+                        hygro = 0.0
+                        pressure = 0.0
+                        battery = 0
 
-                line_val.info(str(date) + ";" + str(round(prix, 2)) + ";" + str(puissance_apparente) + ";" + str(periode_tarifaire)
-                              + ";" + str(round(temp, 1)) + ";" + str(int(hygro)) + ";" + str(int(pressure)) + ";" + str(battery))
+                text = str(date) + ";" + str(round(prix, 2)) + ";" + str(puissance_apparente) + ";" + str(periode_tarifaire)
+                if use_sensor_tag:
+                    text += ";" + str(round(temp, 1)) + ";" + str(int(hygro)) + ";" + str(int(pressure)) + ";" + str(battery)
+                line_val.info(text)
 
                 previoustime += period
 
