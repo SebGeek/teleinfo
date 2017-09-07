@@ -113,7 +113,7 @@ sudo python -m pip install pyserial
 sudo apt-get install bluetooth bluez
 
 * install GitPython
-pip install GitPython
+sudo pip install GitPython
     note: in case of error "IOError: [Errno 28] No space left on device", type before: sudo umount /tmp
 
 # Need to put SSH key in Github in order to avoid username/password connection

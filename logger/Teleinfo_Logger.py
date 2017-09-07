@@ -36,15 +36,16 @@ import argparse
 import datetime
 import threading
 import time
+import os
 
 use_sensor_tag = False
-use_github = True
+use_git = True
 
 if use_sensor_tag:
     from sensor_tag import SensorTag
 
-if use_github:
-    from github import Github
+if use_git:
+    from git import Repo
 
 # Device name
 gDeviceName = '/dev/ttyAMA0'
@@ -193,7 +194,6 @@ class Teleinfo(threading.Thread):
         self.IsTerminated = True
 
 
-# Override doRollover in order to write a header at the top of every file
 class MyTimedRotatingFileHandler(logging.handlers.TimedRotatingFileHandler):
 
     def __init__(self, logfile, when='h', interval=1):
@@ -202,8 +202,69 @@ class MyTimedRotatingFileHandler(logging.handlers.TimedRotatingFileHandler):
         self._log = None
 
     def doRollover(self):
-        super(MyTimedRotatingFileHandler, self).doRollover()
+        ###### START OF ORIGINAL CODE logging.handlers.TimedRotatingFileHandler.doRollover() ######
+        """
+        do a rollover; in this case, a date/time stamp is appended to the filename
+        when the rollover happens.  However, you want the file to be named for the
+        start of the interval, not the current time.  If there is a backup count,
+        then we have to get a list of matching filenames, sort them and remove
+        the one with the oldest suffix.
+        """
+        if self.stream:
+            self.stream.close()
+            self.stream = None
+        # get the time that this sequence started at and make it a TimeTuple
+        currentTime = int(time.time())
+        dstNow = time.localtime(currentTime)[-1]
+        t = self.rolloverAt - self.interval
+        if self.utc:
+            timeTuple = time.gmtime(t)
+        else:
+            timeTuple = time.localtime(t)
+            dstThen = timeTuple[-1]
+            if dstNow != dstThen:
+                if dstNow:
+                    addend = 3600
+                else:
+                    addend = -3600
+                timeTuple = time.localtime(t + addend)
+        dfn = self.baseFilename + "." + time.strftime(self.suffix, timeTuple)
+        if os.path.exists(dfn):
+            os.remove(dfn)
+        # Issue 18940: A file may not have been created if delay is True.
+        if os.path.exists(self.baseFilename):
+            os.rename(self.baseFilename, dfn)
+        if self.backupCount > 0:
+            for s in self.getFilesToDelete():
+                os.remove(s)
+        if not self.delay:
+            self.stream = self._open()
+        newRolloverAt = self.computeRollover(currentTime)
+        while newRolloverAt <= currentTime:
+            newRolloverAt = newRolloverAt + self.interval
+        #If DST changes and midnight or weekly rollover, adjust for this.
+        if (self.when == 'MIDNIGHT' or self.when.startswith('W')) and not self.utc:
+            dstAtRollover = time.localtime(newRolloverAt)[-1]
+            if dstNow != dstAtRollover:
+                if not dstNow:  # DST kicks in before next rollover, so we need to deduct an hour
+                    addend = -3600
+                else:           # DST bows out before next rollover, so we need to add an hour
+                    addend = 3600
+                newRolloverAt += addend
+        self.rolloverAt = newRolloverAt
+        ###### END OF ORIGINAL CODE ######
 
+        # GIT: add, commit and push the file renamed with the date (log.csv.XXXX-XX-XX)
+        repo_dir = '~/partage/teleinfo'
+        repo = Repo(repo_dir)
+        file_list = [dfn, ]
+        commit_message = 'Add log from doRollover()'
+        repo.index.add(file_list)
+        repo.index.commit(commit_message)
+        origin = repo.remote('origin')
+        origin.push()
+
+        # In the new file (log.csv), write a header at the top of every file
         if self._log is not None and self._header != "":
             self._log.info(self._header)
 
@@ -213,13 +274,6 @@ class MyTimedRotatingFileHandler(logging.handlers.TimedRotatingFileHandler):
     def configureHeaderWriter(self, header, log):
         self._header = header
         self._log = log
-
-    def emit(self, record):
-        # repo = Github("", "").get_user().get_repo("teleinfo")
-        # fd = open("../log/log.csv.2016-11-21", "r")
-        # repo.create_file("/log/new_file2.txt", "add log", fd.read())
-
-        return logging.handlers.TimedRotatingFileHandler.emit(self, record)
 
 
 if __name__ == "__main__":
