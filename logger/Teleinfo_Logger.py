@@ -215,7 +215,7 @@ class MyTimedRotatingFileHandler(logging.handlers.TimedRotatingFileHandler):
         self._log = log
 
     def emit(self, record):
-        # repo = Github("SebGeek", "MonTele12").get_user().get_repo("teleinfo")
+        # repo = Github("", "").get_user().get_repo("teleinfo")
         # fd = open("../log/log.csv.2016-11-21", "r")
         # repo.create_file("/log/new_file2.txt", "add log", fd.read())
 
