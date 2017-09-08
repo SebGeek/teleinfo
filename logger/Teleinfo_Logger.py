@@ -40,6 +40,7 @@ import os
 
 use_sensor_tag = False
 use_git = True
+git_repo_dir = '/home/pi/partage/teleinfo'
 
 if use_sensor_tag:
     from sensor_tag import SensorTag
@@ -254,15 +255,15 @@ class MyTimedRotatingFileHandler(logging.handlers.TimedRotatingFileHandler):
         self.rolloverAt = newRolloverAt
         ###### END OF ORIGINAL CODE ######
 
-        # GIT: add, commit and push the file renamed with the date (log.csv.XXXX-XX-XX)
-        repo_dir = '~/partage/teleinfo'
-        repo = Repo(repo_dir)
-        file_list = [dfn, ]
-        commit_message = 'Add log from doRollover()'
-        repo.index.add(file_list)
-        repo.index.commit(commit_message)
-        origin = repo.remote('origin')
-        origin.push()
+        if use_git:
+            # GIT: add, commit and push the file renamed with the date (log.csv.XXXX-XX-XX)
+            repo = Repo(git_repo_dir)
+            file_list = [dfn, ]
+            commit_message = 'Add log from doRollover()'
+            repo.index.add(file_list)
+            repo.index.commit(commit_message)
+            origin = repo.remote('origin')
+            origin.push()
 
         # In the new file (log.csv), write a header at the top of every file
         if self._log is not None and self._header != "":
