@@ -71,6 +71,7 @@ sudo /etc/init.d/samba restart
 sudo apt-get install git
 cd ~/partage
 git clone https://github.com/SebGeek/teleinfo.git
+git remote set-url origin git+ssh://git@github.com/SebGeek/teleinfo.git
 
 * Pour éviter les problèmes de corruption de la carte SD
 ** suppression du swap sur la carte SD
@@ -123,8 +124,44 @@ sudo python Teleinfo_Logger.py -o ../log/log.csv &
 ctrl + A puis D
 To reattach: screen -r
 
-* AUTOMATIC start-up of teleinfo looger (after raspberry start-up)
+* AUTOMATIC start-up of teleinfo logger (after raspberry start-up)
+*** problem: script is launched as root
 sudo nano /etc/rc.local
 Add line:
-python /home/pi/partage/teleinfo/logger/Teleinfo_Logger.py -o /home/pi/partage/teleinfo/log/log.csv &
-(no need sudo before python because rc.local is executed as root)
+/usr/bin/python2.7 /home/pi/partage/teleinfo/logger/Teleinfo_Logger.py -o /home/pi/partage/teleinfo/log/log.csv &
+
+*** update-rc: for services
+
+*** crontab. pb: python must be executed with sudo
+crontab -e
+@reboot /usr/bin/python2.7 /home/pi/partage/teleinfo/logger/Teleinfo_Logger.py -o /home/pi/partage/teleinfo/log/log.csv &
+
+sudo usermod -a -G dialout pi
+
+
+pi@raspberrypi:~ $ /usr/bin/python2.7 /home/pi/partage/teleinfo/logger/Teleinfo_Logger.py -o /home/pi/partage/teleinfo/log/log.csv
+2017-09-10 09:52:08:INFO:Teleinfo values will append in /home/pi/partage/teleinfo/log/log.csv file
+2017-09-10 09:52:08:INFO:Try to open Teleinfo modem '/dev/ttyAMA0'
+2017-09-10 09:52:08:INFO:Teleinfo modem successfully opened
+Exception in thread Thread-1:
+Traceback (most recent call last):
+  File "/usr/lib/python2.7/threading.py", line 801, in __bootstrap_inner
+    self.run()
+  File "/home/pi/partage/teleinfo/logger/Teleinfo_Logger.py", line 193, in run
+    last_frame_read = self.read_serial()
+  File "/home/pi/partage/teleinfo/logger/Teleinfo_Logger.py", line 160, in read_serial
+    name, value, checksum = resp.replace('\r', '').replace('\n', '').replace('\x02', '').replace('\x03', '').split()
+ValueError: need more than 1 value to unpack
+
+^C^CTraceback (most recent call last):
+  File "/home/pi/partage/teleinfo/logger/Teleinfo_Logger.py", line 403, in <module>
+    thread_teleinfo.close()
+  File "/home/pi/partage/teleinfo/logger/Teleinfo_Logger.py", line 100, in close
+    time.sleep(0.1)
+KeyboardInterrupt
+
+
+* To avoid slow SSH connection, disable the SSH function: reverse DNS lookup of the client's connecting hostname for security reasons
+sudo nano /etc/ssh/sshd_config
+Set: UseDNS no
+
