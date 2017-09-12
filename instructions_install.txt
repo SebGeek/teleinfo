@@ -136,7 +136,7 @@ sudo python Teleinfo_Logger.py -o ../log/log.csv &
 ctrl + A puis D
 To reattach: screen -r
 
-* AUTOMATIC start-up of teleinfo looger (after raspberry start-up)
+* AUTOMATIC start-up of teleinfo logger (after raspberry start-up)
 sudo nano /etc/rc.local
 Add line:
 /usr/bin/python2.7 /home/pi/partage/teleinfo/logger/Teleinfo_Logger.py -o /home/pi/partage/teleinfo/log/log.csv &
