@@ -151,7 +151,7 @@ class Teleinfo(threading.Thread):
                 resp = self._ser.readline()
 
             #\x03 has been detected, that's the last line of the frame
-            if len(resp.replace('\r', '').replace('\n', '').split()) == 2:
+            if len(resp.replace('\r', '').replace('\n', '').split()) < 3:
                 #print "* End frame"
                 #The checksum char is ' '
                 resp.replace('\r', '').replace('\n', '').replace('\x02', '').replace('\x03', '').split()
