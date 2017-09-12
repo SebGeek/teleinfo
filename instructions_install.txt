@@ -113,9 +113,21 @@ sudo python -m pip install pyserial
 * install Bluetooth Low Energy stack (for SensorTag)
 sudo apt-get install bluetooth bluez
 
-* install pyGithub
-pip install pyGithub
+* install GitPython
+sudo pip install GitPython
     note: in case of error "IOError: [Errno 28] No space left on device", type before: sudo umount /tmp
+
+# Need to put SSH key in Github in order to avoid username/password connection
+#
+# Generate a SSH keys pair on raspberry pi:
+# cd ~
+# ssh-keygen -t rsa
+#
+# In Web GitHub repository, go to settings and click 'add SSH key'.
+# Copy the contents of ~/.ssh/id_rsa.pub into the field labeled 'Key'.
+#
+# tell on raspberry to use SH connection:
+# git remote set-url origin git@github.com:SebGeek/teleinfo.git
 
 * MANUAL start-up of teleinfo looger
 screen
@@ -124,8 +136,7 @@ sudo python Teleinfo_Logger.py -o ../log/log.csv &
 ctrl + A puis D
 To reattach: screen -r
 
-* AUTOMATIC start-up of teleinfo logger (after raspberry start-up)
-*** problem: script is launched as root
+* AUTOMATIC start-up of teleinfo looger (after raspberry start-up)
 sudo nano /etc/rc.local
 Add line:
 /usr/bin/python2.7 /home/pi/partage/teleinfo/logger/Teleinfo_Logger.py -o /home/pi/partage/teleinfo/log/log.csv &
