@@ -40,6 +40,10 @@ chmod 700 .ssh
 nano .ssh/authorized_keys
 y coller la clef publique précédée du texte ssh-rsa: <<ssh-rsa AAAAB...pQ==>>
 
+* To avoid slow SSH connection, disable the SSH function: reverse DNS lookup of the client's connecting hostname for security reasons
+sudo nano /etc/ssh/sshd_config
+Set: UseDNS no
+
 * SAMBA (partage répertoire Windows)
 sudo apt-get install samba samba-common-bin
 
@@ -129,27 +133,24 @@ sudo pip install GitPython
 # tell on raspberry to use SH connection:
 # git remote set-url origin git@github.com:SebGeek/teleinfo.git
 
+* Add rights to open serial link from user pi
+sudo usermod -a -G dialout pi
+
 * MANUAL start-up of teleinfo looger
 screen
 cd partage/teleinfo/logger/
-sudo python Teleinfo_Logger.py -o ../log/log.csv &
+/usr/bin/python2.7 /home/pi/partage/teleinfo/logger/Teleinfo_Logger.py -o /home/pi/partage/teleinfo/log/log.csv &
 ctrl + A puis D
 To reattach: screen -r
 
 * AUTOMATIC start-up of teleinfo logger (after raspberry start-up)
-sudo nano /etc/rc.local
-Add line:
-/usr/bin/python2.7 /home/pi/partage/teleinfo/logger/Teleinfo_Logger.py -o /home/pi/partage/teleinfo/log/log.csv &
-
-*** update-rc: for services
-
-*** crontab. pb: python must be executed with sudo
+DO NOT EDIT /etc/rc.local to start python script because user is root
+USE crontab:
 crontab -e
 @reboot /usr/bin/python2.7 /home/pi/partage/teleinfo/logger/Teleinfo_Logger.py -o /home/pi/partage/teleinfo/log/log.csv &
 
-sudo usermod -a -G dialout pi
 
-
+****************************************************
 pi@raspberrypi:~ $ /usr/bin/python2.7 /home/pi/partage/teleinfo/logger/Teleinfo_Logger.py -o /home/pi/partage/teleinfo/log/log.csv
 2017-09-10 09:52:08:INFO:Teleinfo values will append in /home/pi/partage/teleinfo/log/log.csv file
 2017-09-10 09:52:08:INFO:Try to open Teleinfo modem '/dev/ttyAMA0'
@@ -170,9 +171,3 @@ ValueError: need more than 1 value to unpack
   File "/home/pi/partage/teleinfo/logger/Teleinfo_Logger.py", line 100, in close
     time.sleep(0.1)
 KeyboardInterrupt
-
-
-* To avoid slow SSH connection, disable the SSH function: reverse DNS lookup of the client's connecting hostname for security reasons
-sudo nano /etc/ssh/sshd_config
-Set: UseDNS no
-
