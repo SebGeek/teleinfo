@@ -151,7 +151,7 @@ class Teleinfo(threading.Thread):
                 resp = self._ser.readline()
 
             #\x03 has been detected, that's the last line of the frame
-            if len(resp.replace('\r', '').replace('\n', '').split()) == 2:
+            if len(resp.replace('\r', '').replace('\n', '').split()) < 3:
                 #print "* End frame"
                 #The checksum char is ' '
                 resp.replace('\r', '').replace('\n', '').replace('\x02', '').replace('\x03', '').split()
@@ -258,12 +258,14 @@ class MyTimedRotatingFileHandler(logging.handlers.TimedRotatingFileHandler):
         if use_git:
             # GIT: add, commit and push the file renamed with the date (log.csv.XXXX-XX-XX)
             repo = Repo(git_repo_dir)
+            print "file is " + dfn
+            print "file status is " + str(os.path.isfile(dfn))
             file_list = [dfn, ]
             commit_message = 'Add log from doRollover()'
-            repo.index.add(file_list)
-            repo.index.commit(commit_message)
+            print "add " + str(repo.index.add(file_list))
+            print "commit " + str(repo.index.commit(commit_message))
             origin = repo.remote('origin')
-            origin.push()
+            print "push " + str(origin.push())
 
         # In the new file (log.csv), write a header at the top of every file
         if self._log is not None and self._header != "":
