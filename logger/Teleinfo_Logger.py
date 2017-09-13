@@ -256,7 +256,7 @@ class MyTimedRotatingFileHandler(logging.handlers.TimedRotatingFileHandler):
         ###### END OF ORIGINAL CODE ######
 
         if use_git:
-            # GIT: add, commit and push the file renamed with the date (log.csv.XXXX-XX-XX)
+            # GIT: 'add', 'commit', 'pull' then 'push' the file renamed with the date (log.csv.XXXX-XX-XX)
             repo = Repo(git_repo_dir)
             print "file is " + dfn
             print "file status is " + str(os.path.isfile(dfn))
@@ -265,6 +265,7 @@ class MyTimedRotatingFileHandler(logging.handlers.TimedRotatingFileHandler):
             print "add " + str(repo.index.add(file_list))
             print "commit " + str(repo.index.commit(commit_message))
             origin = repo.remote('origin')
+            print "pull " + str(origin.pull())
             print "push " + str(origin.push())
 
         # In the new file (log.csv), write a header at the top of every file
