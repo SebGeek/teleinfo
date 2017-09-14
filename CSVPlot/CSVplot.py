@@ -1,6 +1,11 @@
 #!/usr/bin/python
 # -*- coding:utf-8 -*-
 
+from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import range
 import os
 import csv
 import datetime
@@ -9,9 +14,9 @@ import argparse
 import itertools
 
 # Tkinter
-from Tkinter import *
-import tkMessageBox
-import tkFileDialog
+from tkinter import *
+import tkinter.messagebox
+import tkinter.filedialog
 
 # Matplotlib
 import matplotlib.pyplot as plt
@@ -63,7 +68,7 @@ class Application(Frame):
 
     @staticmethod
     def display(msg):
-        print msg
+        print(msg)
 
     def create_widgets(self):
         # Define a weight for automatic resize of components
@@ -87,7 +92,7 @@ class Application(Frame):
         list_titles = []
         for filename in self.filename_list:
             # Detect delimiter
-            csvfile = open(filename, 'rb')
+            csvfile = open(filename, 'r')
             first_line = csvfile.readline()
             if ";" in first_line:
                 delimiter_def = ";"
@@ -110,7 +115,7 @@ class Application(Frame):
 
                 if self.very_first_time == True:
                     nb_col = len(list_titles) - last_column_empty - 1  # do not count the first column (x axis)
-                    self.y_col_to_plot = range(nb_col)
+                    self.y_col_to_plot = list(range(nb_col))
                 nb_col = len(self.y_col_to_plot)
 
                 if self.x_value_type != "forced":
@@ -152,7 +157,11 @@ class Application(Frame):
                         elif y_range == "percentage":
                             val = "Percentage"
                         else:
-                            val = list_titles[y_col + 1].decode("utf-8").encode("ascii", "replace")
+                            if sys.version_info.major >= 3:
+                                val = list_titles[y_col + 1]
+                            else:
+                                # Python 2 code
+                                val = list_titles[y_col + 1].decode("utf-8").encode("ascii", "replace")
                         self.subplot[subplot_idx].set_ylabel(val, fontsize='small')
 
                         if self.very_first_time == True:
@@ -254,13 +263,13 @@ class Application(Frame):
 
                 if line_on == True:
                     if cyclic_style == True:
-                        linestyle = list_linestyle.next()
+                        linestyle = next(list_linestyle)
                     else:
                         linestyle = 'solid'
                     marker = 'None'
                 else:
                     if cyclic_style == True:
-                        marker = list_marker.next()
+                        marker = next(list_marker)
                     else:
                         marker = 's'
                     linestyle = 'None'
@@ -318,7 +327,7 @@ class Application(Frame):
 
     def load_CSV(self):
         if request_file == True:
-            filename_list_str = tkFileDialog.askopenfilenames(initialdir=inspect.currentframe())
+            filename_list_str = tkinter.filedialog.askopenfilenames(initialdir=inspect.currentframe())
             filename_list_new = self.root.splitlist(filename_list_str)
         else:
             filename_list_new = request_file
@@ -374,7 +383,7 @@ class Application(Frame):
 
     @staticmethod
     def about_command():
-        tkMessageBox.showinfo("About", '''
+        tkinter.messagebox.showinfo("About", '''
         CSV plotter
 
 Author: S. Auray - 2017/04/11
