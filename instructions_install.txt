@@ -69,7 +69,7 @@ mkdir ~/partage
 sudo smbpasswd -a pi
    password ****
 
-sudo /etc/init.d/samba restart
+sudo systemctl restart smbd.service
 
 * GIT teleinfo
 sudo apt-get install git
